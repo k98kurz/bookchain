@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "scriptcounting"
+version = "0.0.1"
+authors = [
+  { name="k98kurz", email="k98kurz@gmail.com" },
+]
+description = ""
+readme = "readme.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: ISC License (ISCL)",
+  "Operating System :: OS Independent",
+  "Topic :: Database :: Front-Ends",
+  "Topic :: Office/Business :: Financial :: Accounting",
+]
+dependencies = [
+  "sqloquent >= 0.3.2",
+  "tapescript >= 0.3.1",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/k98kurz/scriptcounting"
+"Bug Tracker" = "https://github.com/k98kurz/scriptcounting/issues"
+
+[project.scripts]
+scriptcounting = "scriptcounting.tools:run_cli"
+
+[project.optional-dependencies]
+asyncql = [
+  "aiosqlite >= 0.19.0",
+]
