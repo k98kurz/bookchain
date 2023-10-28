@@ -1,6 +1,8 @@
 from __future__ import annotations
 from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
+from tapescript import run_auth_script
 from .AccountType import AccountType
+from .EntryType import EntryType
 
 
 class Account(HashedModel):
@@ -12,7 +14,7 @@ class Account(HashedModel):
     name: str
     type: str
     ledger_id: str
-    locking_script: bytes
+    locking_script: bytes|None
     details: str|None
     ledger: RelatedModel
     entries: RelatedCollection
@@ -55,4 +57,29 @@ class Account(HashedModel):
         return super().find(id)
 
     def balance(self) -> int:
-        ...
+        """Tally all entries for this account."""
+        totals = {
+            EntryType.CREDIT.value: 0,
+            EntryType.DEBIT.value: 0,
+        }
+        for entries in self.entries().query().chunk(500):
+            for entry in entries:
+                totals[entry.type] += entry.amount
+
+        if self.type in (
+            AccountType.ASSET, AccountType.DEBIT_BALANCE,
+            AccountType.CONTRA_LIABILITY, AccountType.CONTRA_EQUITY
+        ):
+            return totals[EntryType.DEBIT.value] - totals[EntryType.CREDIT.value]
+
+        return totals[EntryType.CREDIT.value] - totals[EntryType.DEBIT.value]
+
+    def validate_script(self, auth_script: bytes, data: dict = {}) -> bool:
+        """Checks if the auth_script validates against the account
+            locking_script. Returns True if it does and False if it does
+            not (or if it errors).
+        """
+        cache = data.get('cache', {})
+        contracts = data.get('contracts', {})
+        locking_script = self.locking_script or b''
+        return run_auth_script(auth_script + locking_script, cache, contracts)

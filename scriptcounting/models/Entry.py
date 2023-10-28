@@ -7,23 +7,22 @@ class Entry(HashedModel):
     connection_info: str = ''
     table: str = 'entries'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'type', 'amount', 'nonce', 'account_id', 'auth_script', 'details')
+    columns: tuple[str] = ('id', 'type', 'amount', 'nonce', 'account_id', 'details')
     id: str
     type: str
     amount: int
     nonce: str
     account_id: str
-    auth_script: bytes
     details: str|None
     account: RelatedModel
     transactions: RelatedCollection
 
     def __hash__(self) -> int:
-        data = self.encode_value(self._encode(self.data))
+        data = self.encode_value(self.encode(self.data))
         return hash(bytes(data, 'utf-8'))
 
     @staticmethod
-    def _encode(data: dict|None) -> dict|None:
+    def encode(data: dict|None) -> dict|None:
         if type(data) is dict and type(data['type']) is EntryType:
             data['type'] = data['type'].value
         return data
@@ -47,16 +46,16 @@ class Entry(HashedModel):
 
     @classmethod
     def insert(cls, data: dict) -> Entry | None:
-        result = super().insert(cls._encode(data))
+        result = super().insert(cls.encode(data))
         if result is not None:
             result.data = cls._parse(result.data)
         return result
 
     @classmethod
     def insert_many(cls, items: list[dict]) -> int:
-        items = [Entry._encode(data) for data in list]
+        items = [Entry.encode(data) for data in list]
         return super().insert_many(items)
 
     @classmethod
     def query(cls, conditions: dict = None) -> QueryBuilderProtocol:
-        return super().query(cls._encode(conditions))
+        return super().query(cls.encode(conditions))

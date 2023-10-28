@@ -18,7 +18,7 @@ class Currency(HashedModel):
         """Convert the amount into a Decimal representation."""
         return Decimal(amount) / Decimal(10**self.decimals)
 
-    def format(self, amount: int, decimals: int = None, *,
+    def format(self, amount: int, *, decimals: int = None,
                use_prefix: bool = True, use_postfix: bool = False,
                use_fx_symbol: bool = False) -> str:
         """Format an amount using the correct number of decimals."""

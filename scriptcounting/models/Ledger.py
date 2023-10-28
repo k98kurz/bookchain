@@ -1,4 +1,5 @@
 from __future__ import annotations
+from .AccountType import AccountType
 from sqloquent import HashedModel, RelatedModel, RelatedCollection
 
 
@@ -16,8 +17,14 @@ class Ledger(HashedModel):
     accounts: RelatedCollection
     transactions: RelatedCollection
 
-    def balances(self) -> dict:
-        ...
+    def balances(self, reload: bool = False) -> dict[str, tuple[int, AccountType]]:
+        """Return a dict mapping account ids to their balances."""
+        balances = {}
+        if reload:
+            self.accounts().reload()
+        for account in self.accounts:
+            balances[account.id] = (account.balance(reload), account.type)
+        return balances
 
     @classmethod
     def find(cls, id: str) -> Ledger:
