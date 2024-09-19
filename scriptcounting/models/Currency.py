@@ -6,17 +6,27 @@ class Currency(HashedModel):
     connection_info: str = ''
     table: str = 'currencies'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'name', 'prefix_symbol', 'postfix_symbol', 'fx_symbol', 'decimals')
+    columns: tuple[str] = (
+        'id', 'name', 'prefix_symbol', 'postfix_symbol',
+        'fx_symbol', 'decimals', 'base'
+    )
     id: str
     name: str
     prefix_symbol: str|None
     postfix_symbol: str|None
     fx_symbol: str|None
     decimals: int
+    base: int|None
 
     def to_decimal(self, amount: int) -> Decimal:
         """Convert the amount into a Decimal representation."""
-        return Decimal(amount) / Decimal(10**self.decimals)
+        base = self.base or 10
+        return Decimal(amount) / Decimal(base**self.decimals)
+
+    def get_units_and_change(self, amount: int) -> tuple[int, int]:
+        """Get the full units and subunits."""
+        base = self.base or 10
+        return divmod(amount, base ** self.decimals)
 
     def format(self, amount: int, *, decimals: int = None,
                use_prefix: bool = True, use_postfix: bool = False,

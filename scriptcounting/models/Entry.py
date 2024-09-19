@@ -1,6 +1,7 @@
 from __future__ import annotations
 from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
 from .EntryType import EntryType
+import packify
 
 
 class Entry(HashedModel):
@@ -9,11 +10,11 @@ class Entry(HashedModel):
     id_column: str = 'id'
     columns: tuple[str] = ('id', 'type', 'amount', 'nonce', 'account_id', 'details')
     id: str
-    type: str
+    type: EntryType
     amount: int
     nonce: str
     account_id: str
-    details: str|None
+    details: packify.SerializableType
     account: RelatedModel
     transactions: RelatedCollection
 
@@ -23,8 +24,11 @@ class Entry(HashedModel):
 
     @staticmethod
     def encode(data: dict|None) -> dict|None:
-        if type(data) is dict and type(data['type']) is EntryType:
+        if type(data) is not dict:
+            return data
+        if type(data['type']) is EntryType:
             data['type'] = data['type'].value
+        data['details'] = packify.pack(data['details'])
         return data
 
     @staticmethod
@@ -33,6 +37,8 @@ class Entry(HashedModel):
             data['type'] = EntryType(data['type'])
         if type(data) is dict and type(data['amount']) is str:
             data['amount'] = int(data['amount'])
+        if type(data['details']) is bytes:
+            data['details'] = packify.unpack(data['details'])
         return data
 
     @staticmethod
@@ -43,6 +49,13 @@ class Entry(HashedModel):
         else:
             models.data = Entry._parse(models.data)
         return models
+
+    @classmethod
+    def generate_id(cls, data: dict) -> bytes:
+        """Generate an id by hashing the non-id contents. Raises
+            TypeError for unencodable type (calls packify.pack).
+        """
+        return super().generate_id(cls.encode(data))
 
     @classmethod
     def insert(cls, data: dict) -> Entry | None:
@@ -59,3 +72,4 @@ class Entry(HashedModel):
     @classmethod
     def query(cls, conditions: dict = None) -> QueryBuilderProtocol:
         return super().query(cls.encode(conditions))
+

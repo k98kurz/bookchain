@@ -10,3 +10,4 @@ class AccountType(Enum):
     EQUITY = 'e'
     CONTRA_LIABILITY = '-l'
     CONTRA_EQUITY = '-e'
+

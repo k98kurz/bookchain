@@ -1,34 +1,54 @@
 from __future__ import annotations
 from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
-from tapescript import run_auth_script
+from tapescript import run_auth_script, Script
 from .AccountType import AccountType
 from .EntryType import EntryType
+import packify
 
 
 class Account(HashedModel):
     connection_info: str = ''
     table: str = 'accounts'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'name', 'type', 'ledger_id', 'locking_script', 'details')
+    columns: tuple[str] = (
+        'id', 'name', 'type', 'ledger_id', 'locking_script', 'details',
+        'lock_entry_types',
+    )
     id: str
     name: str
-    type: str
+    type: AccountType
     ledger_id: str
     locking_script: bytes|None
+    lock_entry_types: bytes
     details: str|None
     ledger: RelatedModel
     entries: RelatedCollection
 
     @staticmethod
     def _encode(data: dict|None) -> dict|None:
-        if type(data) is dict and 'type' in data and type(data['type']) is AccountType:
+        if type(data) is not dict:
+            return data
+        if 'type' in data and type(data['type']) is AccountType:
             data['type'] = data['type'].value
+        if 'lock_entry_types' in data and type(data['lock_entry_types']) is list:
+            data['lock_entry_types'] = packify.pack([
+                let.value for let in data['lock_entry_types']
+            ])
         return data
 
     @staticmethod
     def _parse(data: dict|None) -> dict|None:
-        if type(data) is dict and 'type' in data and type(data['type']) is str:
+        if type(data) is not dict:
+            return data
+        if 'type' in data and type(data['type']) is str:
             data['type'] = AccountType(data['type'])
+        if 'lock_entry_types' in data:
+            if type(data['lock_entry_types']) is bytes:
+                data['lock_entry_types'] = [
+                    EntryType(let) for let in packify.unpack(data['lock_entry_types'])
+                ]
+        else:
+            data['lock_entry_types'] = []
         return data
 
     @staticmethod
@@ -59,8 +79,8 @@ class Account(HashedModel):
     def balance(self) -> int:
         """Tally all entries for this account."""
         totals = {
-            EntryType.CREDIT.value: 0,
-            EntryType.DEBIT.value: 0,
+            EntryType.CREDIT: 0,
+            EntryType.DEBIT: 0,
         }
         for entries in self.entries().query().chunk(500):
             for entry in entries:
@@ -74,12 +94,15 @@ class Account(HashedModel):
 
         return totals[EntryType.CREDIT.value] - totals[EntryType.DEBIT.value]
 
-    def validate_script(self, auth_script: bytes, data: dict = {}) -> bool:
+    def validate_script(self, auth_script: bytes|Script, tapescript_runtime: dict = {}) -> bool:
         """Checks if the auth_script validates against the account
             locking_script. Returns True if it does and False if it does
             not (or if it errors).
         """
-        cache = data.get('cache', {})
-        contracts = data.get('contracts', {})
+        cache = tapescript_runtime.get('cache', {})
+        contracts = tapescript_runtime.get('contracts', {})
         locking_script = self.locking_script or b''
+        if type(auth_script) is Script:
+            locking_script = Script.from_bytes(locking_script)
         return run_auth_script(auth_script + locking_script, cache, contracts)
+
