@@ -1,3 +1,7 @@
+@TODO
+
+Separate locking scripts for each entry type (credit and debit) per Account.
+
 # scriptcounting
 
 Double-entry accounting system with cryptographic audit trail and optional
@@ -12,21 +16,21 @@ cryptographic transaction verification.
 
 ## Overview
 
-This library provides an accounting system using `sqloquent` for persistence,
-`packify` for deterministic encoding, `tapescript` for authorization, and the
+This library provides an accounting system using sqloquent for persistence,
+packify for deterministic encoding, tapescript for authorization, and the
 classic rules of double-entry bookkeeping. All entries and transactions have
 deterministic content IDs determined by hashing the relevant contents, and the
-inclusion of `tapescript` allows for Bitcoin-style locking and unlocking scripts
+inclusion of tapescript allows for Bitcoin-style locking and unlocking scripts
 to encode access controls at the account level.
 
 ### Class organization
 
 `Currency` represents a currency/unit of account for a `Ledger`. It includes the
-number of subunits to track (supports only base 10 currently) and optionally
-an FX symbol, prefix symbol, and/or postfix symbol to be used with the `format`
-method (e.g. `USD.format(1200)` could result in "12.00 USD", "$12.00", or
-"12.00$", respectively). It also includes `to_decimal` method for formatting
-int amounts into `Decimal`s.
+number of subunits to track and optionally the base for conversion to decimal
+(defaults to 10), FX symbol, prefix symbol, and/or postfix symbol to be used with
+the `format` method (e.g. `USD.format(1200)` could result in "12.00 USD",
+"$12.00", or "12.00$", respectively). It also includes `to_decimal` method for
+formatting int amounts into `Decimal`s.
 
 `Identity` represents a legal person or other entity that can sign contracts
 or engage in transactions. It includes the name, details, and optionally public
@@ -40,8 +44,8 @@ key bytes and private key seed bytes.
 script for access control, and optional details.
 
 `AccountType` is an enum representing the valid account types. The options are
-DEBIT_BALANCE, ASSET, CONTRA_ASSET, CREDIT_BALANCE, LIABILITY, EQUITY,
-CONTRA_LIABILITY, and CONTRA_EQUITY.
+`DEBIT_BALANCE`, `ASSET`, `CONTRA_ASSET`, `CREDIT_BALANCE`, `LIABILITY`,
+`EQUITY`, `CONTRA_LIABILITY`, and `CONTRA_EQUITY`.
 
 `Entry` represents an entry in the general ledger for a given `Account`. It
 includes a type (one of the `EntryType` enum options), an amount, a nonce, the
@@ -67,7 +71,15 @@ applied to each ledger affected by the transaction.
 
 ### Cryptographic audit trail
 
-Since each `Identity`
+Models inherit from `sqloquent.HashedModel`, so all data is hashed into the ID,
+guaranteeing a unique, deterministic ID for each unique model.
 
 Whenever something is deleted, it will be encoded and inserted into the
 `deleted_models` table to maintain an audit trail.
+
+Accounts may be created with locking scripts, which will require associated
+Entries to provide valid auth scripts. These scripts are executed using
+tapescript. If some tapescript runtime values are required for validation,
+e.g. cache or plugins, they can be saved in Transaction.details and passed to
+`Transaction.validate` and `Account.validate_script`.
+
