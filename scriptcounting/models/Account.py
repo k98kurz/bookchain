@@ -16,21 +16,42 @@ class Account(HashedModel):
     )
     id: str
     name: str
-    type: AccountType
+    type: str
     ledger_id: str
     locking_script: bytes|None
     lock_entry_types: bytes
-    details: str|None
+    details: bytes|None
     ledger: RelatedModel
     entries: RelatedCollection
+
+    @property
+    def Type(self) -> AccountType:
+        return AccountType(self.type)
+    @Type.setter
+    def Type(self, val: AccountType):
+        if type(val) is AccountType:
+            self.type = val.value
+
+    @property
+    def LockEntryTypes(self) -> list[EntryType]:
+        return [
+            EntryType(et)
+            for et in packify.unpack(self.data.get('lock_entry_types', b'l\x00\x00\x00\x00'))
+        ]
+    @LockEntryTypes.setter
+    def LockEntryTypes(self, vals: list[EntryType]):
+        if type(vals) is list and all([type(et) is EntryType for et in vals]):
+            self.lock_entry_types = packify.pack([et.value for et in vals])
 
     @staticmethod
     def _encode(data: dict|None) -> dict|None:
         if type(data) is not dict:
             return data
-        if 'type' in data and type(data['type']) is AccountType:
+        if type(data.get('type', None)) is AccountType:
             data['type'] = data['type'].value
-        if 'lock_entry_types' in data and type(data['lock_entry_types']) is list:
+        if type(data.get('lock_entry_types', None)) is list:
+            if all([type(et) is not EntryType for et in data['lock_entry_types']]):
+                data['lock_entry_types'] = [EntryType(et) for et in data['lock_entry_types']]
             data['lock_entry_types'] = packify.pack([
                 let.value for let in data['lock_entry_types']
             ])
@@ -40,15 +61,6 @@ class Account(HashedModel):
     def _parse(data: dict|None) -> dict|None:
         if type(data) is not dict:
             return data
-        if 'type' in data and type(data['type']) is str:
-            data['type'] = AccountType(data['type'])
-        if 'lock_entry_types' in data:
-            if type(data['lock_entry_types']) is bytes:
-                data['lock_entry_types'] = [
-                    EntryType(let) for let in packify.unpack(data['lock_entry_types'])
-                ]
-        else:
-            data['lock_entry_types'] = []
         return data
 
     @staticmethod
@@ -105,4 +117,3 @@ class Account(HashedModel):
         if type(auth_script) is Script:
             locking_script = Script.from_bytes(locking_script)
         return run_auth_script(auth_script + locking_script, cache, contracts)
-

@@ -8,7 +8,7 @@ class Identity(HashedModel):
     columns: tuple[str] = ('id', 'name', 'details', 'pubkey', 'seed')
     id: str
     name: str
-    details: str
+    details: bytes
     pubkey: bytes|None
     seed: bytes|None
     ledgers: RelatedCollection

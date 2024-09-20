@@ -10,11 +10,11 @@ class Entry(HashedModel):
     id_column: str = 'id'
     columns: tuple[str] = ('id', 'type', 'amount', 'nonce', 'account_id', 'details')
     id: str
-    type: EntryType
+    type: str
     amount: int
     nonce: str
     account_id: str
-    details: packify.SerializableType
+    details: bytes
     account: RelatedModel
     transactions: RelatedCollection
 
@@ -22,23 +22,36 @@ class Entry(HashedModel):
         data = self.encode_value(self.encode(self.data))
         return hash(bytes(data, 'utf-8'))
 
+    @property
+    def Type(self) -> EntryType:
+        return EntryType(self.type)
+    @Type.setter
+    def Type(self, val: EntryType):
+        if type(val) is not EntryType:
+            return
+        self.type = val.value
+
+    @property
+    def Details(self) -> packify.SerializableType:
+        return packify.unpack(self.data.get('details', b'n\x00\x00\x00\x00'))
+    @Details.setter
+    def Details(self, val: packify.SerializableType):
+        self.data['details'] = packify.pack(val)
+
     @staticmethod
     def encode(data: dict|None) -> dict|None:
         if type(data) is not dict:
             return data
         if type(data['type']) is EntryType:
             data['type'] = data['type'].value
-        data['details'] = packify.pack(data['details'])
+        if type(data.get('details', {})) is not bytes:
+            data['details'] = packify.pack(data.get('details', None))
         return data
 
     @staticmethod
     def _parse(data: dict|None) -> dict|None:
-        if type(data) is dict and type(data['type']) is str:
-            data['type'] = EntryType(data['type'])
         if type(data) is dict and type(data['amount']) is str:
             data['amount'] = int(data['amount'])
-        if type(data['details']) is bytes:
-            data['details'] = packify.unpack(data['details'])
         return data
 
     @staticmethod
@@ -51,11 +64,11 @@ class Entry(HashedModel):
         return models
 
     @classmethod
-    def generate_id(cls, data: dict) -> bytes:
+    def generate_id(cls, data: dict) -> str:
         """Generate an id by hashing the non-id contents. Raises
             TypeError for unencodable type (calls packify.pack).
         """
-        return super().generate_id(cls.encode(data))
+        return super().generate_id(cls.encode({**data}))
 
     @classmethod
     def insert(cls, data: dict) -> Entry | None:
@@ -72,4 +85,3 @@ class Entry(HashedModel):
     @classmethod
     def query(cls, conditions: dict = None) -> QueryBuilderProtocol:
         return super().query(cls.encode(conditions))
-
