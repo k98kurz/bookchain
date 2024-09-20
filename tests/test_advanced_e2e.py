@@ -64,8 +64,13 @@ class TestBasicE2E(unittest.TestCase):
         ).bytes
         delegate_seed = os.urandom(32)
         delegate_pkey = bytes(SigningKey(delegate_seed).verify_key)
-        delegate_cert = tapescript.make_delegate_key_cert_sig(
-            seed, delegate_pkey, int(time()), int(time()) + 60*60*24*365
+        delegate_cert = {
+            'pkey': delegate_pkey,
+            'begin_ts': int(time()) - 1,
+            'end_ts': int(time()) + 60*60*24*365
+        }
+        delegate_cert['sig'] = tapescript.make_delegate_key_cert_sig(
+            seed, delegate_pkey, delegate_cert['begin_ts'], delegate_cert['end_ts']
         )
 
         # set up identity, currency, ledger, and some accounts
@@ -156,10 +161,66 @@ class TestBasicE2E(unittest.TestCase):
         liability_entry.id = liability_entry.generate_id(liability_entry.data)
         auth_scripts = {
             equity_acct.id: tapescript.tools.make_taproot_witness_keyspend(
-                seed, {'sigfield1': bytes.fromhex(equity_entry.id)}, committed_script
+                seed, equity_entry.get_sigfields(), committed_script
             ).bytes,
             liability_acct.id: tapescript.tools.make_taproot_witness_keyspend(
-                seed, {'sigfield1': bytes.fromhex(liability_entry.id)}, committed_script
+                seed, liability_entry.get_sigfields(), committed_script
+            ).bytes,
+        }
+        txn = models.Transaction.prepare(
+            [equity_entry, liability_entry],
+            str(time()),
+            auth_scripts,
+        )
+        assert txn.validate(auth_scripts=auth_scripts)
+        equity_entry.save()
+        asset_entry.save()
+        txn.save()
+
+        # prepare and save a valid transaction: auth required - delegated
+        txn_nonce = os.urandom(16)
+        equity_entry = models.Entry({
+            'type': models.EntryType.DEBIT,
+            'account_id': equity_acct.id,
+            'amount': 90_00,
+            'nonce': txn_nonce,
+        })
+        equity_entry.account = equity_acct
+        equity_entry.id = equity_entry.generate_id(equity_entry.data)
+        liability_entry = models.Entry({
+            'type': models.EntryType.CREDIT,
+            'account_id': liability_acct.id,
+            'amount': 90_00,
+            'nonce': txn_nonce,
+        })
+        liability_entry.account = liability_acct
+        liability_entry.id = liability_entry.generate_id(liability_entry.data)
+        auth_scripts = {
+            equity_acct.id: (
+                tapescript.tools.make_delegate_key_unlock(
+                    delegate_seed,
+                    delegate_pkey,
+                    delegate_cert['begin_ts'],
+                    delegate_cert['end_ts'],
+                    delegate_cert['sig'],
+                    equity_entry.get_sigfields()
+                ) +
+                tapescript.tools.make_taproot_witness_scriptspend(
+                    pkey, committed_script
+                )
+            ).bytes,
+            liability_acct.id: (
+                tapescript.tools.make_delegate_key_unlock(
+                    delegate_seed,
+                    delegate_pkey,
+                    delegate_cert['begin_ts'],
+                    delegate_cert['end_ts'],
+                    delegate_cert['sig'],
+                    liability_entry.get_sigfields()
+                ) +
+                tapescript.tools.make_taproot_witness_scriptspend(
+                    pkey, committed_script
+                )
             ).bytes,
         }
         txn = models.Transaction.prepare(

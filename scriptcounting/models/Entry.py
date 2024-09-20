@@ -1,6 +1,7 @@
 from __future__ import annotations
 from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
 from .EntryType import EntryType
+from typing import Callable
 import packify
 
 
@@ -85,3 +86,13 @@ class Entry(HashedModel):
     @classmethod
     def query(cls, conditions: dict = None) -> QueryBuilderProtocol:
         return super().query(cls.encode(conditions))
+
+    @classmethod
+    def set_sigfield_plugin(cls, plugin: Callable):
+        cls._plugin = plugin
+
+    def get_sigfields(self, *args, **kwargs) -> dict[str, bytes]:
+        """Get the sigfields for tapescript authorization."""
+        if hasattr(self, '_plugin') and callable(self._plugin):
+            return self._plugin(self, *args, **kwargs)
+        return {'sigfield1': bytes.fromhex(self.generate_id(self.data))}

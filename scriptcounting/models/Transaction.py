@@ -160,7 +160,10 @@ class Transaction(HashedModel):
             if 'cache' not in runtime:
                 runtime['cache'] = {}
             if 'sigfield1' not in runtime['cache']:
-                runtime['cache']['sigfield1'] = bytes.fromhex(entry.id)
+                runtime['cache'] = {
+                    **runtime['cache'],
+                    **entry.get_sigfields(account=acct, tapescript_runtime=tapescript_runtime)
+                }
             if not acct.validate_script(self.AuthScripts[acct.id], runtime):
                 return False
 
