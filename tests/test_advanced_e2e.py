@@ -167,6 +167,7 @@ class TestBasicE2E(unittest.TestCase):
                 seed, liability_entry.get_sigfields(), committed_script
             ).bytes,
         }
+        assert len(equity_entry.get_sigfields()['sigfield1']) == 32
         txn = models.Transaction.prepare(
             [equity_entry, liability_entry],
             str(time()),
@@ -318,6 +319,54 @@ class TestBasicE2E(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             txn = models.Transaction.prepare([equity_entry, asset_entry], str(int(time())))
         assert 'unbalanced' in str(e.exception)
+
+
+        # test get_sigfields plugin system
+        def get_sigfields(entry: models.Entry, *args, **kwargs) -> dict:
+            """Concat the entry id to the account id."""
+            return {
+                'sigfield1': bytes.fromhex(entry.id + entry.account_id)
+            }
+        models.Entry.set_sigfield_plugin(get_sigfields)
+
+        # prepare and save a valid transaction: auth required
+        txn_nonce = os.urandom(16)
+        equity_entry = models.Entry({
+            'type': models.EntryType.DEBIT,
+            'account_id': equity_acct.id,
+            'amount': 10_00,
+            'nonce': txn_nonce,
+        })
+        equity_entry.account = equity_acct
+        equity_entry.id = equity_entry.generate_id(equity_entry.data)
+        liability_entry = models.Entry({
+            'type': models.EntryType.CREDIT,
+            'account_id': liability_acct.id,
+            'amount': 10_00,
+            'nonce': txn_nonce,
+        })
+        liability_entry.account = liability_acct
+        liability_entry.id = liability_entry.generate_id(liability_entry.data)
+        auth_scripts = {
+            equity_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+                seed, equity_entry.get_sigfields(), committed_script
+            ).bytes,
+            liability_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+                seed, liability_entry.get_sigfields(), committed_script
+            ).bytes,
+        }
+        assert len(equity_entry.get_sigfields()['sigfield1']) == 64
+        txn = models.Transaction.prepare(
+            [equity_entry, liability_entry],
+            str(time()),
+            auth_scripts,
+        )
+        assert txn.validate(auth_scripts=auth_scripts)
+        equity_entry.save()
+        asset_entry.save()
+        txn.save()
+        # cleanup
+        del models.Entry._plugin
 
 
 if __name__ == '__main__':
