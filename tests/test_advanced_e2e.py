@@ -14,7 +14,7 @@ MIGRATIONS_PATH = 'tests/migrations'
 MODELS_PATH = 'scriptcounting/models'
 
 
-class TestBasicE2E(unittest.TestCase):
+class TestAdvancedE2E(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         models.Identity.connection_info = DB_FILEPATH
@@ -140,6 +140,9 @@ class TestBasicE2E(unittest.TestCase):
         equity_entry.save()
         asset_entry.save()
         txn.save()
+        # reload txn from database and validate it
+        txn: models.Transaction = models.Transaction.find(txn.id)
+        assert txn.validate(reload=True)
 
         # prepare and save a valid transaction: auth required
         txn_nonce = os.urandom(16)
@@ -175,8 +178,11 @@ class TestBasicE2E(unittest.TestCase):
         )
         assert txn.validate(auth_scripts=auth_scripts)
         equity_entry.save()
-        asset_entry.save()
+        liability_entry.save()
         txn.save()
+        # reload txn from database and validate it
+        txn: models.Transaction = models.Transaction.find(txn.id)
+        assert txn.validate(reload=True)
 
         # prepare and save a valid transaction: auth required - delegated
         txn_nonce = os.urandom(16)
@@ -231,8 +237,11 @@ class TestBasicE2E(unittest.TestCase):
         )
         assert txn.validate(auth_scripts=auth_scripts)
         equity_entry.save()
-        asset_entry.save()
+        liability_entry.save()
         txn.save()
+        # reload txn from database and validate it
+        txn: models.Transaction = models.Transaction.find(txn.id)
+        assert txn.validate(reload=True)
 
         # prepare invalid transaction: missing auth
         txn_nonce = os.urandom(16)

@@ -107,6 +107,9 @@ class TestBasicE2E(unittest.TestCase):
         equity_entry.save()
         asset_entry.save()
         txn.save()
+        # reload txn from database and validate it
+        txn: models.Transaction = models.Transaction.find(txn.id)
+        assert txn.validate(reload=True)
 
         # prepare invalid transaction: reused entries
         with self.assertRaises(ValueError) as e:
