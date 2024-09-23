@@ -2,6 +2,7 @@ from __future__ import annotations
 from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
 from tapescript import run_auth_script, Script
 from .AccountType import AccountType
+from .Entry import Entry
 from .EntryType import EntryType
 import packify
 
@@ -11,37 +12,39 @@ class Account(HashedModel):
     table: str = 'accounts'
     id_column: str = 'id'
     columns: tuple[str] = (
-        'id', 'name', 'type', 'ledger_id', 'locking_script', 'details',
-        'lock_entry_types',
+        'id', 'name', 'type', 'ledger_id', 'code',
+        'locking_script', 'details', 'lock_entry_types',
     )
     id: str
     name: str
     type: str
     ledger_id: str
+    code: str|None
     locking_script: bytes|None
     lock_entry_types: bytes
     details: bytes|None
     ledger: RelatedModel
     entries: RelatedCollection
 
+    # override automatic properties
     @property
-    def Type(self) -> AccountType:
-        return AccountType(self.type)
-    @Type.setter
-    def Type(self, val: AccountType):
+    def type(self) -> AccountType:
+        return AccountType(self.data['type'])
+    @type.setter
+    def type(self, val: AccountType):
         if type(val) is AccountType:
-            self.type = val.value
+            self.data['type'] = val.value
 
     @property
-    def LockEntryTypes(self) -> list[EntryType]:
+    def lock_entry_types(self) -> list[EntryType]:
         return [
             EntryType(et)
-            for et in packify.unpack(self.data.get('lock_entry_types', b'l\x00\x00\x00\x00'))
+            for et in packify.unpack(self.data.get('lock_entry_types', None) or b'l\x00\x00\x00\x00')
         ]
-    @LockEntryTypes.setter
-    def LockEntryTypes(self, vals: list[EntryType]):
+    @lock_entry_types.setter
+    def lock_entry_types(self, vals: list[EntryType]):
         if type(vals) is list and all([type(et) is EntryType for et in vals]):
-            self.lock_entry_types = packify.pack([et.value for et in vals])
+            self.data['lock_entry_types'] = packify.pack([et.value for et in vals])
 
     @staticmethod
     def _encode(data: dict|None) -> dict|None:
@@ -95,6 +98,7 @@ class Account(HashedModel):
             EntryType.DEBIT: 0,
         }
         for entries in self.entries().query().chunk(500):
+            entry: Entry
             for entry in entries:
                 totals[entry.type] += entry.amount
 
@@ -102,9 +106,9 @@ class Account(HashedModel):
             AccountType.ASSET, AccountType.DEBIT_BALANCE,
             AccountType.CONTRA_LIABILITY, AccountType.CONTRA_EQUITY
         ):
-            return totals[EntryType.DEBIT.value] - totals[EntryType.CREDIT.value]
+            return totals[EntryType.DEBIT] - totals[EntryType.CREDIT]
 
-        return totals[EntryType.CREDIT.value] - totals[EntryType.DEBIT.value]
+        return totals[EntryType.CREDIT] - totals[EntryType.DEBIT]
 
     def validate_script(self, auth_script: bytes|Script, tapescript_runtime: dict = {}) -> bool:
         """Checks if the auth_script validates against the account

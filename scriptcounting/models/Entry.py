@@ -23,27 +23,28 @@ class Entry(HashedModel):
         data = self.encode_value(self.encode(self.data))
         return hash(bytes(data, 'utf-8'))
 
+    # override automatic properties
     @property
-    def Type(self) -> EntryType:
-        return EntryType(self.type)
-    @Type.setter
-    def Type(self, val: EntryType):
+    def type(self) -> EntryType:
+        return EntryType(self.data['type'])
+    @type.setter
+    def type(self, val: EntryType):
         if type(val) is not EntryType:
             return
-        self.type = val.value
+        self.data['type'] = val.value
 
     @property
-    def Details(self) -> packify.SerializableType:
+    def details(self) -> packify.SerializableType:
         return packify.unpack(self.data.get('details', b'n\x00\x00\x00\x00'))
-    @Details.setter
-    def Details(self, val: packify.SerializableType):
+    @details.setter
+    def details(self, val: packify.SerializableType):
         self.data['details'] = packify.pack(val)
 
     @staticmethod
     def encode(data: dict|None) -> dict|None:
         if type(data) is not dict:
             return data
-        if type(data['type']) is EntryType:
+        if type(data.get('type', None)) is EntryType:
             data['type'] = data['type'].value
         if type(data.get('details', {})) is not bytes:
             data['details'] = packify.pack(data.get('details', None))

@@ -3,7 +3,7 @@ from genericpath import isfile
 from sqlite3 import OperationalError
 from time import time
 import os
-import sqloquent
+import sqloquent.tools
 import unittest
 
 
@@ -110,6 +110,11 @@ class TestBasicE2E(unittest.TestCase):
         # reload txn from database and validate it
         txn: models.Transaction = models.Transaction.find(txn.id)
         assert txn.validate(reload=True)
+
+        # check balances
+        assert equity_acct.balance() == 10_000_00, equity_acct.balance()
+        assert asset_acct.balance() == 10_000_00, asset_acct.balance()
+        assert liability_acct.balance() == 0, liability_acct.balance()
 
         # prepare invalid transaction: reused entries
         with self.assertRaises(ValueError) as e:

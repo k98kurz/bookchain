@@ -20,11 +20,12 @@ class Transaction(HashedModel):
     entries: RelatedCollection
     ledgers: RelatedCollection
 
+    # override automatic properties
     @property
-    def Details(self) -> dict[str, bytes]:
+    def details(self) -> dict[str, bytes]:
         return packify.unpack(self.data.get('details', b'd\x00\x00\x00\x00'))
-    @Details.setter
-    def Details(self, val: dict[str, bytes]):
+    @details.setter
+    def details(self, val: dict[str, bytes]):
         if type(val) is not dict:
             return
         if not all([type(k) is str and type(v) is bytes for k, v in val.items()]):
@@ -32,10 +33,10 @@ class Transaction(HashedModel):
         self.data['details'] = packify.pack(val)
 
     @property
-    def AuthScripts(self) -> dict[str, bytes]:
+    def auth_scripts(self) -> dict[str, bytes]:
         return packify.unpack(self.data.get('auth_scripts', b'd\x00\x00\x00\x00'))
-    @AuthScripts.setter
-    def AuthScripts(self, val: dict[str, bytes]):
+    @auth_scripts.setter
+    def auth_scripts(self, val: dict[str, bytes]):
         if type(val) is not dict:
             return
         if not all([type(k) is str and type(v) is bytes for k, v in val.items()]):
@@ -106,8 +107,8 @@ class Transaction(HashedModel):
             'ledger_ids': ",".join(sorted([ledger_id for ledger_id in ledgers])),
             'timestamp': timestamp,
         })
-        txn.AuthScripts = auth_scripts
-        txn.Details = details
+        txn.auth_scripts = auth_scripts
+        txn.details = details
         txn.entries = entries
         assert txn.validate(tapescript_runtime, reload, auth_scripts), \
             'transaction validation failed'
@@ -132,9 +133,10 @@ class Transaction(HashedModel):
             self.entries().reload()
 
         ledgers = {}
+        entry: Entry
         for entry in self.entries:
             vert(entry.account_id in auth_scripts or not entry.account.locking_script
-                 or entry.Type not in entry.account.LockEntryTypes,
+                 or entry.type not in entry.account.lock_entry_types,
                 f"missing auth script for account {entry.account_id} ({entry.account.name})")
             if reload:
                 entry.account().reload()
@@ -152,9 +154,9 @@ class Transaction(HashedModel):
         for entry in self.entries:
             acct = entry.account
 
-            if not acct.locking_script or entry.Type not in acct.LockEntryTypes:
+            if not acct.locking_script or entry.type not in acct.lock_entry_types:
                 continue
-            if acct.id not in self.AuthScripts:
+            if acct.id not in self.auth_scripts:
                 return False
             runtime = tapescript_runtime.get(entry.id, {**tapescript_runtime})
             if 'cache' not in runtime:
@@ -164,7 +166,7 @@ class Transaction(HashedModel):
                     **runtime['cache'],
                     **entry.get_sigfields(tapescript_runtime=tapescript_runtime)
                 }
-            if not acct.validate_script(self.AuthScripts[acct.id], runtime):
+            if not acct.validate_script(self.auth_scripts[acct.id], runtime):
                 return False
 
         return True

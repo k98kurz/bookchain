@@ -4,7 +4,7 @@ from nacl.signing import SigningKey
 from sqlite3 import OperationalError
 from time import time
 import os
-import sqloquent
+import sqloquent.tools
 import tapescript
 import unittest
 
@@ -97,7 +97,7 @@ class TestAdvancedE2E(unittest.TestCase):
             'ledger_id': ledger.id,
             'locking_script': locking_script,
         })
-        equity_acct.LockEntryTypes = [models.EntryType.DEBIT]
+        equity_acct.lock_entry_types = [models.EntryType.DEBIT]
         equity_acct.save()
         asset_acct = models.Account({
             'name': 'General Asset',
@@ -105,7 +105,7 @@ class TestAdvancedE2E(unittest.TestCase):
             'ledger_id': ledger.id,
             'locking_script': locking_script,
         })
-        asset_acct.LockEntryTypes = [models.EntryType.CREDIT]
+        asset_acct.lock_entry_types = [models.EntryType.CREDIT]
         asset_acct.save()
         liability_acct = models.Account.insert({
             'name': 'General Liability',
@@ -113,7 +113,7 @@ class TestAdvancedE2E(unittest.TestCase):
             'ledger_id': ledger.id,
             'locking_script': locking_script,
         })
-        liability_acct.LockEntryTypes = [models.EntryType.DEBIT, models.EntryType.CREDIT]
+        liability_acct.lock_entry_types = [models.EntryType.DEBIT, models.EntryType.CREDIT]
         liability_acct.save()
         equity_acct.ledger().reload()
         asset_acct.ledger().reload()
