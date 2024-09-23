@@ -94,14 +94,15 @@ class Transaction(HashedModel):
         ledgers = set()
         for entry in entries:
             entry.id = entry.generate_id(entry.data)
+            if reload:
+                entry.account().reload()
             vert(Transaction.query().contains('entry_ids', entry.id).count() == 0,
                  f"entry {entry.id} is already contained within a Transaction")
-            ledgers.add(entry.account_id)
+            ledgers.add(entry.account.ledger_id)
 
         txn = cls({
             'entry_ids': ",".join(sorted([
-                e.id
-                if e.id else e.generate_id(e.data)
+                e.id if e.id else e.generate_id(e.data)
                 for e in entries
             ])),
             'ledger_ids': ",".join(sorted([ledger_id for ledger_id in ledgers])),
@@ -110,13 +111,12 @@ class Transaction(HashedModel):
         txn.auth_scripts = auth_scripts
         txn.details = details
         txn.entries = entries
-        assert txn.validate(tapescript_runtime, reload, auth_scripts), \
+        assert txn.validate(tapescript_runtime, reload), \
             'transaction validation failed'
         txn.id = txn.generate_id(txn.data)
         return txn
 
-    def validate(self, tapescript_runtime: dict = {}, reload: bool = False,
-                auth_scripts: dict = {}) -> bool:
+    def validate(self, tapescript_runtime: dict = {}, reload: bool = False) -> bool:
         """Determines if a Transaction is valid using the rules of accounting
             and checking all auth scripts against their locking scripts. The
             tapescript_runtime can be scoped to each entry ID. Raises TypeError
@@ -126,7 +126,7 @@ class Transaction(HashedModel):
             If reload is set to True, entries and accounts will be reloaded
             from the database.
         """
-        tert(type(auth_scripts) is dict,
+        tert(type(self.auth_scripts) is dict,
             'auth_scripts must be dict mapping account ID to authorizing tapescript bytecode')
 
         if reload:
@@ -135,7 +135,7 @@ class Transaction(HashedModel):
         ledgers = {}
         entry: Entry
         for entry in self.entries:
-            vert(entry.account_id in auth_scripts or not entry.account.locking_scripts
+            vert(entry.account_id in self.auth_scripts or not entry.account.locking_scripts
                  or entry.type not in entry.account.locking_scripts,
                 f"missing auth script for account {entry.account_id} ({entry.account.name})")
             if reload:

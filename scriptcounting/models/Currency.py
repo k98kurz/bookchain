@@ -8,7 +8,7 @@ class Currency(HashedModel):
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'name', 'prefix_symbol', 'postfix_symbol',
-        'fx_symbol', 'decimals', 'base'
+        'fx_symbol', 'decimals', 'base', 'details'
     )
     id: str
     name: str
@@ -17,6 +17,7 @@ class Currency(HashedModel):
     fx_symbol: str|None
     decimals: int
     base: int|None
+    details: str|None
 
     def to_decimal(self, amount: int) -> Decimal:
         """Convert the amount into a Decimal representation."""

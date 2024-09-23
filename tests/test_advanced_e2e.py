@@ -176,7 +176,7 @@ class TestAdvancedE2E(unittest.TestCase):
             str(time()),
             auth_scripts,
         )
-        assert txn.validate(auth_scripts=auth_scripts)
+        assert txn.validate()
         equity_entry.save()
         liability_entry.save()
         txn.save()
@@ -235,7 +235,7 @@ class TestAdvancedE2E(unittest.TestCase):
             str(time()),
             auth_scripts,
         )
-        assert txn.validate(auth_scripts=auth_scripts)
+        assert txn.validate()
         equity_entry.save()
         liability_entry.save()
         txn.save()
@@ -370,7 +370,7 @@ class TestAdvancedE2E(unittest.TestCase):
             str(time()),
             auth_scripts,
         )
-        assert txn.validate(auth_scripts=auth_scripts)
+        assert txn.validate()
         equity_entry.save()
         asset_entry.save()
         txn.save()
