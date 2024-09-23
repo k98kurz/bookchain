@@ -95,25 +95,25 @@ class TestAdvancedE2E(unittest.TestCase):
             'name': 'General Equity',
             'type': models.AccountType.EQUITY.value,
             'ledger_id': ledger.id,
-            'locking_script': locking_script,
         })
-        equity_acct.lock_entry_types = [models.EntryType.DEBIT]
+        equity_acct.locking_scripts = {models.EntryType.DEBIT: locking_script}
         equity_acct.save()
         asset_acct = models.Account({
             'name': 'General Asset',
             'type': models.AccountType.ASSET.value,
             'ledger_id': ledger.id,
-            'locking_script': locking_script,
         })
-        asset_acct.lock_entry_types = [models.EntryType.CREDIT]
+        asset_acct.locking_scripts = {models.EntryType.CREDIT: locking_script}
         asset_acct.save()
         liability_acct = models.Account.insert({
             'name': 'General Liability',
             'type': models.AccountType.LIABILITY.value,
             'ledger_id': ledger.id,
-            'locking_script': locking_script,
         })
-        liability_acct.lock_entry_types = [models.EntryType.DEBIT, models.EntryType.CREDIT]
+        liability_acct.locking_scripts = {
+            models.EntryType.DEBIT: locking_script,
+            models.EntryType.CREDIT: locking_script,
+        }
         liability_acct.save()
         equity_acct.ledger().reload()
         asset_acct.ledger().reload()

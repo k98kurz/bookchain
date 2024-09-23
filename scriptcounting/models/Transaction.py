@@ -135,8 +135,8 @@ class Transaction(HashedModel):
         ledgers = {}
         entry: Entry
         for entry in self.entries:
-            vert(entry.account_id in auth_scripts or not entry.account.locking_script
-                 or entry.type not in entry.account.lock_entry_types,
+            vert(entry.account_id in auth_scripts or not entry.account.locking_scripts
+                 or entry.type not in entry.account.locking_scripts,
                 f"missing auth script for account {entry.account_id} ({entry.account.name})")
             if reload:
                 entry.account().reload()
@@ -154,7 +154,7 @@ class Transaction(HashedModel):
         for entry in self.entries:
             acct = entry.account
 
-            if not acct.locking_script or entry.type not in acct.lock_entry_types:
+            if not acct.locking_scripts or entry.type not in acct.locking_scripts:
                 continue
             if acct.id not in self.auth_scripts:
                 return False
@@ -166,7 +166,7 @@ class Transaction(HashedModel):
                     **runtime['cache'],
                     **entry.get_sigfields(tapescript_runtime=tapescript_runtime)
                 }
-            if not acct.validate_script(self.auth_scripts[acct.id], runtime):
+            if not acct.validate_script(entry.type, self.auth_scripts[acct.id], runtime):
                 return False
 
         return True

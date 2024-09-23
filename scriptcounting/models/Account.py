@@ -13,20 +13,19 @@ class Account(HashedModel):
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'name', 'type', 'ledger_id', 'code',
-        'locking_script', 'details', 'lock_entry_types',
+        'locking_scripts', 'details',
     )
     id: str
     name: str
     type: str
     ledger_id: str
     code: str|None
-    locking_script: bytes|None
-    lock_entry_types: bytes
+    locking_scripts: bytes|None
     details: bytes|None
     ledger: RelatedModel
     entries: RelatedCollection
 
-    # override automatic properties
+    # override automatic property
     @property
     def type(self) -> AccountType:
         return AccountType(self.data['type'])
@@ -35,16 +34,23 @@ class Account(HashedModel):
         if type(val) is AccountType:
             self.data['type'] = val.value
 
+    # override automatic property
     @property
-    def lock_entry_types(self) -> list[EntryType]:
-        return [
-            EntryType(et)
-            for et in packify.unpack(self.data.get('lock_entry_types', None) or b'l\x00\x00\x00\x00')
-        ]
-    @lock_entry_types.setter
-    def lock_entry_types(self, vals: list[EntryType]):
-        if type(vals) is list and all([type(et) is EntryType for et in vals]):
-            self.data['lock_entry_types'] = packify.pack([et.value for et in vals])
+    def locking_scripts(self) -> dict[EntryType, bytes]:
+        return {
+            EntryType(k): v
+            for k,v in packify.unpack(
+                self.data.get('locking_scripts', None) or b'd\x00\x00\x00\x00'
+            ).items()
+        }
+    @locking_scripts.setter
+    def locking_scripts(self, vals: dict[EntryType, bytes]):
+        if type(vals) is dict and all([type(k) is EntryType for k, _ in vals.items()]) \
+            and all([type(v) is bytes for k,v in vals.items()]):
+            self.data['locking_scripts'] = packify.pack({
+                k.value: v
+                for k,v in vals.items()
+            })
 
     @staticmethod
     def _encode(data: dict|None) -> dict|None:
@@ -110,14 +116,15 @@ class Account(HashedModel):
 
         return totals[EntryType.CREDIT] - totals[EntryType.DEBIT]
 
-    def validate_script(self, auth_script: bytes|Script, tapescript_runtime: dict = {}) -> bool:
-        """Checks if the auth_script validates against the account
-            locking_script. Returns True if it does and False if it does
-            not (or if it errors).
+    def validate_script(self, entry_type: EntryType, auth_script: bytes|Script,
+                        tapescript_runtime: dict = {}) -> bool:
+        """Checks if the auth_script validates against the correct
+            locking_script for the EntryType. Returns True if it does
+            and False if it does not (or if it errors).
         """
         cache = tapescript_runtime.get('cache', {})
         contracts = tapescript_runtime.get('contracts', {})
-        locking_script = self.locking_script or b''
+        locking_script = self.locking_scripts.get(entry_type, b'')
         if type(auth_script) is Script:
-            locking_script = Script.from_bytes(locking_script)
+            auth_script = auth_script.bytes
         return run_auth_script(auth_script + locking_script, cache, contracts)
