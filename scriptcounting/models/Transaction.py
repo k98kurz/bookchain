@@ -2,7 +2,10 @@ from __future__ import annotations
 from hashlib import sha256
 from sqloquent import HashedModel, RelatedCollection
 from sqloquent.errors import vert, tert
+from .Account import Account, AccountType
+from .Correspondence import Correspondence
 from .Entry import Entry, EntryType
+from .Identity import Identity
 import packify
 
 
@@ -132,6 +135,7 @@ class Transaction(HashedModel):
         if reload:
             self.entries().reload()
 
+        # first check that all ledgers balance
         ledgers = {}
         entry: Entry
         for entry in self.entries:
@@ -151,6 +155,7 @@ class Transaction(HashedModel):
             vert(balances['Cr'] == balances['Dr'],
                 f"ledger {ledger_id} unbalanced: {balances['Cr']} Cr != {balances['Dr']} Dr")
 
+        # next check that all necessary authorizations are provided
         for entry in self.entries:
             acct = entry.account
 
@@ -169,4 +174,65 @@ class Transaction(HashedModel):
             if not acct.validate_script(entry.type, self.auth_scripts[acct.id], runtime):
                 return False
 
+        # finally check that correspondent accounting is not violated
+        if len(ledgers) > 1:
+            accounts = [e.account for e in self.entries]
+
+            for acct in accounts:
+                acct: Account
+                if acct.type is AccountType.ASSET and type(acct.details) is str \
+                    and acct.details != acct.id and Identity.find(acct.details):
+                    # Nostro account must have equivalent Vostro account
+                    nostro = acct
+                    nostro.ledger().reload()
+                    cor: Correspondence = Correspondence.query().contains(
+                        'identity_ids', nostro.ledger.identity_id
+                    ).contains('identity_ids', nostro.details).first()
+                    if cor is None:
+                        continue
+                    accts = cor.get_accounts()
+                    accts = [a for a in accts if a.ledger.identity_id == acct.details]
+                    accts = [a for a in accts if a.type is AccountType.LIABILITY]
+                    if len(accts) < 1:
+                        return False
+                    vostro = accts[0]
+                    if vostro.id not in [a.id for a in accounts]:
+                        # each nostro Entry must have an offsetting vostro Entry
+                        return False
+                    offsetting_entry = [e for e in self.entries if e.account_id == vostro.id]
+                    if len(offsetting_entry) < 1:
+                        return False
+                    if offsetting_entry[0].amount != entry.amount:
+                        return False
+
+                if acct.type is AccountType.LIABILITY and type(acct.details) is str \
+                    and acct.details != acct.id and Identity.find(acct.details):
+                    # Vostro account must have equivalent Nostro account
+                    vostro = acct
+                    vostro.ledger().reload()
+                    cor: Correspondence = Correspondence.query().contains(
+                        'identity_ids', vostro.ledger.identity_id
+                    ).contains('identity_ids', vostro.details).first()
+                    if cor is None:
+                        continue
+                    accts = cor.get_accounts()
+                    accts = [a for a in accts if a.ledger.identity_id == acct.details]
+                    accts = [a for a in accts if a.type is AccountType.ASSET]
+                    if len(accts) < 1:
+                        return False
+                    nostro = accts[0]
+                    if nostro.id not in [a.id for a in accounts]:
+                        # each nostro Entry must have an offsetting nostro Entry
+                        return False
+                    offsetting_entry = [e for e in self.entries if e.account_id == nostro.id]
+                    if len(offsetting_entry) < 1:
+                        return False
+                    if offsetting_entry[0].amount != entry.amount:
+                        return False
+
         return True
+
+    def save(self, tapescript_runtime: dict = {}, reload: bool = False) -> Transaction:
+        """Override to ensure validation."""
+        assert self.validate(tapescript_runtime, reload), 'cannot save an invalid Transaction'
+        return super().save()

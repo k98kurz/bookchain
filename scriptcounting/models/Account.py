@@ -52,6 +52,15 @@ class Account(HashedModel):
                 for k,v in vals.items()
             })
 
+    # override automatic property
+    @property
+    def details(self) -> packify.SerializableType:
+        return packify.unpack(self.data.get('details', None) or b'n\x00\x00\x00\x00')
+    @details.setter
+    def details(self, val: packify.SerializableType):
+        if isinstance(val, packify.SerializableType):
+            self.data['details'] = packify.pack(val)
+
     @staticmethod
     def _encode(data: dict|None) -> dict|None:
         if type(data) is not dict:
