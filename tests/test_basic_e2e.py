@@ -79,8 +79,8 @@ class TestBasicE2E(unittest.TestCase):
         liability_acct = models.Account.insert({
             'name': 'General Liability',
             'type': models.AccountType.LIABILITY,
+            'ledger_id': ledger.id,
         })
-        liability_acct.ledger = ledger
         liability_acct.save()
         equity_acct.ledger().reload()
         asset_acct.ledger().reload()
