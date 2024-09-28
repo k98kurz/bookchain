@@ -1,9 +1,7 @@
 from __future__ import annotations
 from .Account import Account, AccountType
-from .Entry import Entry, EntryType
 from .Ledger import Ledger
 from sqloquent import HashedModel, RelatedCollection
-from sqloquent.classes import SqlModel
 from sqloquent.errors import vert
 
 
@@ -89,33 +87,26 @@ class Identity(HashedModel):
         for ledger in Ledger.query().get():
             nostros = Account.query({
                 'ledger_id': ledger.id,
-                'type': AccountType.ASSET.value,
+                'type': AccountType.NOSTRO_ASSET.value,
             }).contains('name', correspondent.id).get()
             if len(nostros):
                 accounts.extend(nostros)
             vostros = Account.query({
                 'ledger_id': ledger.id,
-                'type': AccountType.LIABILITY.value,
+                'type': AccountType.VOSTRO_LIABILITY.value,
             }).contains('name', correspondent.id).get()
             if len(vostros):
                 accounts.extend(vostros)
             nostros = Account.query({
                 'ledger_id': ledger.id,
-                'type': AccountType.ASSET.value,
+                'type': AccountType.NOSTRO_ASSET.value,
             }).contains('name', self.id).get()
             if len(nostros):
                 accounts.extend(nostros)
             vostros = Account.query({
                 'ledger_id': ledger.id,
-                'type': AccountType.LIABILITY.value,
+                'type': AccountType.VOSTRO_LIABILITY.value,
             }).contains('name', self.id).get()
             if len(vostros):
                 accounts.extend(vostros)
         return accounts
-
-    def pay_correspondent(self, correspondent: Identity, amount: int,
-                          reload: bool = False) -> list[Entry]:
-        """Prepares a list of entries that pay the given correspondent
-            the given amount.
-        """
-        ...
