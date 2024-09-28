@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .AccountType import AccountType
+from .Account import Account, AccountType
 from sqloquent import HashedModel, RelatedModel, RelatedCollection
 
 
@@ -35,3 +35,27 @@ class Ledger(HashedModel):
     def insert(cls, data: dict) -> Ledger | None:
         # """For better type hints."""
         return super().insert(data)
+
+    def setup_basic_accounts(self) -> list[Account]:
+        """Creates and returns a list of 3 unsaved Accounts covering the
+            3 basic categories: Asset, Liability, Equity.
+        """
+        asset = Account({
+            'name': f'General Asset ({self.owner.name})',
+            'type': AccountType.ASSET,
+            'ledger_id': self.id,
+            'code': '1xx'
+        })
+        liability = Account({
+            'name': f'General Liability ({self.owner.name})',
+            'type': AccountType.LIABILITY,
+            'ledger_id': self.id,
+            'code': '2xx'
+        })
+        equity = Account({
+            'name': f'General Equity ({self.owner.name})',
+            'type': AccountType.EQUITY,
+            'ledger_id': self.id,
+            'code': '28x'
+        })
+        return [asset, liability, equity]
