@@ -89,6 +89,8 @@ class Transaction(HashedModel):
             the entries is contained within an existing Transaction.
             Entries and Transaction will have IDs generated but will not
             be persisted to the database and must be saved separately.
+            The auth_scripts dict must map account IDs to tapescript
+            bytecode bytes.
         """
         tert(type(entries) is list and all([type(e) is Entry for e in entries]),
             'entries must be list[Entry]')
@@ -108,7 +110,7 @@ class Transaction(HashedModel):
                 e.id if e.id else e.generate_id(e.data)
                 for e in entries
             ])),
-            'ledger_ids': ",".join(sorted([ledger_id for ledger_id in ledgers])),
+            'ledger_ids': ",".join(sorted(list(ledgers))),
             'timestamp': timestamp,
         })
         txn.auth_scripts = auth_scripts
@@ -180,7 +182,7 @@ class Transaction(HashedModel):
 
             for acct in accounts:
                 acct: Account
-                if acct.type is AccountType.ASSET and type(acct.details) is str \
+                if acct.type is AccountType.NOSTRO_ASSET and type(acct.details) is str \
                     and acct.details != acct.id and Identity.find(acct.details):
                     # Nostro account must have equivalent Vostro account
                     nostro = acct
@@ -192,7 +194,7 @@ class Transaction(HashedModel):
                         continue
                     accts = cor.get_accounts()
                     accts = [a for a in accts if a.ledger.identity_id == acct.details]
-                    accts = [a for a in accts if a.type is AccountType.LIABILITY]
+                    accts = [a for a in accts if a.type is AccountType.VOSTRO_LIABILITY]
                     if len(accts) < 1:
                         return False
                     vostro = accts[0]
@@ -205,7 +207,7 @@ class Transaction(HashedModel):
                     if offsetting_entry[0].amount != entry.amount:
                         return False
 
-                if acct.type is AccountType.LIABILITY and type(acct.details) is str \
+                if acct.type is AccountType.VOSTRO_LIABILITY and type(acct.details) is str \
                     and acct.details != acct.id and Identity.find(acct.details):
                     # Vostro account must have equivalent Nostro account
                     vostro = acct
@@ -217,7 +219,7 @@ class Transaction(HashedModel):
                         continue
                     accts = cor.get_accounts()
                     accts = [a for a in accts if a.ledger.identity_id == acct.details]
-                    accts = [a for a in accts if a.type is AccountType.ASSET]
+                    accts = [a for a in accts if a.type is AccountType.NOSTRO_ASSET]
                     if len(accts) < 1:
                         return False
                     nostro = accts[0]
@@ -233,6 +235,10 @@ class Transaction(HashedModel):
         return True
 
     def save(self, tapescript_runtime: dict = {}, reload: bool = False) -> Transaction:
-        """Override to ensure validation."""
+        """Validate the transaction, save the entries, then save the
+            transaction.
+        """
         assert self.validate(tapescript_runtime, reload), 'cannot save an invalid Transaction'
+        for e in self.entries:
+            e.save()
         return super().save()
