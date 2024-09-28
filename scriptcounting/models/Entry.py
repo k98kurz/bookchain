@@ -13,7 +13,7 @@ class Entry(HashedModel):
     id: str
     type: str
     amount: int
-    nonce: str
+    nonce: bytes
     account_id: str
     details: bytes
     account: RelatedModel
