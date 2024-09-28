@@ -13,7 +13,7 @@ class Account(HashedModel):
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'name', 'type', 'ledger_id', 'code',
-        'locking_scripts', 'details',
+        'locking_scripts', 'category', 'details'
     )
     id: str
     name: str
@@ -21,6 +21,7 @@ class Account(HashedModel):
     ledger_id: str
     code: str|None
     locking_scripts: bytes|None
+    category: str|None
     details: bytes|None
     ledger: RelatedModel
     entries: RelatedCollection
@@ -119,7 +120,8 @@ class Account(HashedModel):
 
         if self.type in (
             AccountType.ASSET, AccountType.DEBIT_BALANCE,
-            AccountType.CONTRA_LIABILITY, AccountType.CONTRA_EQUITY
+            AccountType.CONTRA_LIABILITY, AccountType.CONTRA_EQUITY,
+            AccountType.NOSTRO_ASSET
         ):
             return totals[EntryType.DEBIT] - totals[EntryType.CREDIT]
 
