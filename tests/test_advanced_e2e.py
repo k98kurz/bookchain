@@ -137,9 +137,11 @@ class TestAdvancedE2E(unittest.TestCase):
         asset_entry.account = asset_acct
         txn = models.Transaction.prepare([equity_entry, asset_entry], str(time()))
         assert txn.validate()
-        equity_entry.save()
-        asset_entry.save()
+        assert models.Entry.query({'id': equity_entry.id}).count() == 0
+        assert models.Entry.query({'id': asset_entry.id}).count() == 0
         txn.save()
+        assert models.Entry.query({'id': equity_entry.id}).count() == 1
+        assert models.Entry.query({'id': asset_entry.id}).count() == 1
         # reload txn from database and validate it
         txn: models.Transaction = models.Transaction.find(txn.id)
         assert txn.validate(reload=True)
@@ -371,8 +373,6 @@ class TestAdvancedE2E(unittest.TestCase):
             auth_scripts,
         )
         assert txn.validate()
-        equity_entry.save()
-        asset_entry.save()
         txn.save()
         # cleanup
         del models.Entry._plugin
