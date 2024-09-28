@@ -13,6 +13,8 @@ Ledger.owner = belongs_to(Ledger, Identity, 'identity_id')
 
 Ledger.currency = belongs_to(Ledger, Currency, 'currency_id')
 
+Correspondence.ledgers = contains(Correspondence, Ledger, 'ledger_ids')
+
 Identity.correspondences = within(Identity, Correspondence, 'identity_ids')
 Correspondence.identities = contains(Correspondence, Identity, 'identity_ids')
 
