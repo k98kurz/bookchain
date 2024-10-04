@@ -41,13 +41,16 @@ class TestAdvancedE2E(unittest.TestCase):
 
     def automigrate(self):
         sqloquent.tools.publish_migrations(MIGRATIONS_PATH)
-        modelnames = ['Identity', 'Currency', 'Ledger', 'Account', 'Entry', 'Transaction']
-        for name in modelnames:
-            m = sqloquent.tools.make_migration_from_model(name, f'{MODELS_PATH}/{name}.py')
+        tomigrate = [
+            models.Identity, models.Currency, models.Ledger,
+            models.Account, models.Entry, models.Transaction,
+        ]
+        for model in tomigrate:
+            name = model.__name__
+            m = sqloquent.tools.make_migration_from_model(model, name)
             with open(f'{MIGRATIONS_PATH}/create_{name}.py', 'w') as f:
                 f.write(m)
         sqloquent.tools.automigrate(MIGRATIONS_PATH, DB_FILEPATH)
-
     def test_e2e(self):
         with self.assertRaises(OperationalError):
             models.Account.query().count()

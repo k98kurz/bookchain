@@ -18,13 +18,17 @@ class TestCorrespondencesE2E(unittest.TestCase):
     @classmethod
     def automigrate(cls):
         sqloquent.tools.publish_migrations(MIGRATIONS_PATH)
-        modelnames = ['Identity', 'Currency', 'Ledger', 'Account', 'Entry', 'Transaction', 'Correspondence']
-        for name in modelnames:
-            m = sqloquent.tools.make_migration_from_model(name, f'{MODELS_PATH}/{name}.py')
+        tomigrate = [
+            models.Identity, models.Currency, models.Ledger,
+            models.Account, models.Entry, models.Transaction,
+            models.Correspondence,
+        ]
+        for model in tomigrate:
+            name = model.__name__
+            m = sqloquent.tools.make_migration_from_model(model, name)
             with open(f'{MIGRATIONS_PATH}/create_{name}.py', 'w') as f:
                 f.write(m)
         sqloquent.tools.automigrate(MIGRATIONS_PATH, DB_FILEPATH)
-
     @classmethod
     def setUpClass(cls):
         models.Identity.connection_info = DB_FILEPATH
