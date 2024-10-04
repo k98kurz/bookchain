@@ -1,17 +1,17 @@
-@TODO
+# BookChain
 
-Separate locking scripts for each entry type (credit and debit) per Account.
-
-# scriptcounting
-
-Double-entry accounting system with cryptographic audit trail and optional
-cryptographic transaction verification.
+BookChain is an accounting library that provides a cryptographic audit trail of
+every identity, ledger, account, transaction, and entry to ensure data
+integrity. It also uses the tapescript package to ensure account security and
+reject invalid transactions if controls are configured on the involved accounts.
+Included are tools for establishing correspondent credit relations as well as
+accomplishing basic bookkeeping tasks.
 
 ## Status
 
-- [ ] Base classes
-- [ ] Accounting rules
-- [ ] Tests
+- [x] Base classes
+- [x] Accounting rules
+- [x] Tests
 - [ ] Documentation
 
 ## Overview
@@ -82,4 +82,3 @@ Entries to provide valid auth scripts. These scripts are executed using
 tapescript. If some tapescript runtime values are required for validation,
 e.g. cache or plugins, they can be saved in Transaction.details and passed to
 `Transaction.validate` and `Account.validate_script`.
-

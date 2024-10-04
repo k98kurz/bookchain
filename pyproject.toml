@@ -3,12 +3,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "scriptcounting"
+name = "bookchain"
 version = "0.0.1"
 authors = [
   { name="k98kurz", email="k98kurz@gmail.com" },
 ]
-description = ""
+description = "Double-entry accounting system with cryptographic audit trail and optional cryptographic transaction verification."
 readme = "readme.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -25,11 +25,11 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/k98kurz/scriptcounting"
-"Bug Tracker" = "https://github.com/k98kurz/scriptcounting/issues"
+"Homepage" = "https://github.com/k98kurz/bookchain"
+"Bug Tracker" = "https://github.com/k98kurz/bookchain/issues"
 
 [project.scripts]
-scriptcounting = "scriptcounting.tools:run_cli"
+bookchain = "bookchain.tools:run_cli"
 
 [project.optional-dependencies]
 asyncql = [

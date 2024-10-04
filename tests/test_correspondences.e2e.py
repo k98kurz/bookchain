@@ -11,7 +11,7 @@ import unittest
 
 DB_FILEPATH = 'tests/test.db'
 MIGRATIONS_PATH = 'tests/migrations'
-MODELS_PATH = 'scriptcounting/models'
+MODELS_PATH = 'bookchain/models'
 
 
 class TestCorrespondencesE2E(unittest.TestCase):
