@@ -115,6 +115,7 @@ class Account(HashedModel):
         totals = {
             EntryType.CREDIT: 0,
             EntryType.DEBIT: 0,
+            'subaccounts': 0,
         }
         for entries in self.entries().query().chunk(500):
             entry: Entry
@@ -123,19 +124,16 @@ class Account(HashedModel):
 
         if include_sub_accounts:
             for acct in self.children:
-                for entries in acct.entries().query().chunk(500):
-                    entry: Entry
-                    for entry in entries:
-                        totals[entry.type] += entry.amount
+                totals['subaccounts'] += acct.balance(include_sub_accounts=True)
 
         if self.type in (
             AccountType.ASSET, AccountType.DEBIT_BALANCE,
             AccountType.CONTRA_LIABILITY, AccountType.CONTRA_EQUITY,
             AccountType.NOSTRO_ASSET
         ):
-            return totals[EntryType.DEBIT] - totals[EntryType.CREDIT]
+            return totals[EntryType.DEBIT] - totals[EntryType.CREDIT] + totals['subaccounts']
 
-        return totals[EntryType.CREDIT] - totals[EntryType.DEBIT]
+        return totals[EntryType.CREDIT] - totals[EntryType.DEBIT] + totals['subaccounts']
 
     def validate_script(self, entry_type: EntryType, auth_script: bytes|Script,
                         tapescript_runtime: dict = {}) -> bool:
