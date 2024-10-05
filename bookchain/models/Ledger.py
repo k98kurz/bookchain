@@ -18,12 +18,15 @@ class Ledger(HashedModel):
     transactions: RelatedCollection
 
     def balances(self, reload: bool = False) -> dict[str, tuple[int, AccountType]]:
-        """Return a dict mapping account ids to their balances."""
+        """Return a dict mapping account ids to their balances. Accounts
+            with sub-accounts will not include the sub-account balances;
+            the sub-account balances will be returned separately.
+        """
         balances = {}
         if reload:
             self.accounts().reload()
         for account in self.accounts:
-            balances[account.id] = (account.balance(reload), account.type)
+            balances[account.id] = (account.balance(False), account.type)
         return balances
 
     @classmethod

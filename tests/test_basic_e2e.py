@@ -132,6 +132,12 @@ class TestBasicE2E(unittest.TestCase):
         assert equity_acct.balance() == 10_000_00, equity_acct.balance()
         assert asset_acct.balance() == 10_000_00, asset_acct.balance()
         assert liability_acct.balance() == 0, liability_acct.balance()
+        balances = ledger.balances(True)
+        assert len(balances.keys()) == 4, balances
+        assert balances[equity_acct.id][0] == 10_000_00, balances[equity_acct.id][0]
+        assert balances[asset_acct.id][0] == 10_000_00, balances[asset_acct.id][0]
+        assert balances[liability_acct.id][0] == 0, balances[liability_acct.id][0]
+        assert balances[liability_sub_acct.id][0] == 0, balances[liability_sub_acct.id][0]
 
         # prepare and save valid transaction for liability sub account
         txn_nonce = os.urandom(16)
@@ -157,6 +163,12 @@ class TestBasicE2E(unittest.TestCase):
         assert liability_sub_acct.balance() == 9_99, liability_acct.balance()
         assert liability_acct.balance() == 9_99, liability_acct.balance()
         assert liability_acct.balance(False) == 0, liability_acct.balance(False)
+        balances = ledger.balances(True)
+        assert len(balances.keys()) == 4, balances
+        assert balances[equity_acct.id][0] == 10_000_00-9_99, balances[equity_acct.id][0]
+        assert balances[asset_acct.id][0] == 10_000_00, balances[asset_acct.id][0]
+        assert balances[liability_acct.id][0] == 0, balances[liability_acct.id][0]
+        assert balances[liability_sub_acct.id][0] == 9_99, balances[liability_sub_acct.id][0]
 
         # prepare invalid transaction: reused entries
         with self.assertRaises(ValueError) as e:
