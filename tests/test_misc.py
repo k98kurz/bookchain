@@ -1,4 +1,4 @@
-from context import models
+from context import models, bookchain
 from genericpath import isfile
 from sqlite3 import OperationalError
 from time import time
@@ -15,13 +15,7 @@ MODELS_PATH = 'bookchain/models'
 class TestMisc(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        models.Identity.connection_info = DB_FILEPATH
-        models.Currency.connection_info = DB_FILEPATH
-        models.Ledger.connection_info = DB_FILEPATH
-        models.Account.connection_info = DB_FILEPATH
-        models.Entry.connection_info = DB_FILEPATH
-        models.Transaction.connection_info = DB_FILEPATH
-        sqloquent.DeletedModel.connection_info = DB_FILEPATH
+        bookchain.set_connection_info(DB_FILEPATH)
         super().setUpClass()
 
     def setUp(self):
@@ -37,14 +31,17 @@ class TestMisc(unittest.TestCase):
             os.remove(DB_FILEPATH)
         super().tearDown()
 
-    def automigrate(self):
-        sqloquent.tools.publish_migrations(MIGRATIONS_PATH)
-        modelnames = ['Identity', 'Currency', 'Ledger', 'Account', 'Entry', 'Transaction']
-        for name in modelnames:
-            m = sqloquent.tools.make_migration_from_model(name, f'{MODELS_PATH}/{name}.py')
-            with open(f'{MIGRATIONS_PATH}/create_{name}.py', 'w') as f:
-                f.write(m)
-        sqloquent.tools.automigrate(MIGRATIONS_PATH, DB_FILEPATH)
+    def test_set_connection_info(self):
+        bookchain.set_connection_info(DB_FILEPATH)
+        for name in dir(models):
+            model = getattr(models, name)
+            if hasattr(model, 'connection_info'):
+                assert model.connection_info == DB_FILEPATH, model
+        bookchain.set_connection_info('foobar')
+        for name in dir(models):
+            model = getattr(models, name)
+            if hasattr(model, 'connection_info'):
+                assert model.connection_info == 'foobar', model
 
     def test_currency(self):
         currency = models.Currency({
@@ -68,6 +65,19 @@ class TestMisc(unittest.TestCase):
 
         assert currency.format(60*60*1.23) == 'Ħ1.23', currency.format(60*60*1.23)
         assert currency.get_units_and_change(60*60*2 + 123) == (2, 123)
+
+    def test_publish_migrations(self):
+        assert len(os.listdir(MIGRATIONS_PATH)) < 2, os.listdir(MIGRATIONS_PATH)
+        bookchain.publish_migrations(MIGRATIONS_PATH)
+        assert len(os.listdir(MIGRATIONS_PATH)) > 2, os.listdir(MIGRATIONS_PATH)
+
+    def test_automigrate(self):
+        bookchain.set_connection_info(DB_FILEPATH)
+        bookchain.publish_migrations(MIGRATIONS_PATH)
+        with self.assertRaises(OperationalError):
+            models.Account.query().count()
+        bookchain.automigrate(MIGRATIONS_PATH, DB_FILEPATH)
+        assert models.Account.query().count() == 0
 
 
 if __name__ == '__main__':
