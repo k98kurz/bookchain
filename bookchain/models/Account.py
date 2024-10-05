@@ -12,18 +12,21 @@ class Account(HashedModel):
     table: str = 'accounts'
     id_column: str = 'id'
     columns: tuple[str] = (
-        'id', 'name', 'type', 'ledger_id', 'code',
+        'id', 'name', 'type', 'ledger_id', 'parent_id', 'code',
         'locking_scripts', 'category', 'details'
     )
     id: str
     name: str
     type: str
     ledger_id: str
+    parent_id: str
     code: str|None
     locking_scripts: bytes|None
     category: str|None
     details: bytes|None
     ledger: RelatedModel
+    parent: RelatedModel
+    children: RelatedCollection
     entries: RelatedCollection
 
     # override automatic property
@@ -107,8 +110,8 @@ class Account(HashedModel):
         """For better type hinting."""
         return super().find(id)
 
-    def balance(self) -> int:
-        """Tally all entries for this account."""
+    def balance(self, include_sub_accounts: bool = True) -> int:
+        """Tally all entries for this account and all sub-accounts."""
         totals = {
             EntryType.CREDIT: 0,
             EntryType.DEBIT: 0,
@@ -117,6 +120,13 @@ class Account(HashedModel):
             entry: Entry
             for entry in entries:
                 totals[entry.type] += entry.amount
+
+        if include_sub_accounts:
+            for acct in self.children:
+                for entries in acct.entries().query().chunk(500):
+                    entry: Entry
+                    for entry in entries:
+                        totals[entry.type] += entry.amount
 
         if self.type in (
             AccountType.ASSET, AccountType.DEBIT_BALANCE,

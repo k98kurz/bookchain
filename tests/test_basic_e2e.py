@@ -1,6 +1,7 @@
 from context import models
 from genericpath import isfile
 from sqlite3 import OperationalError
+from sqloquent import DeletedModel
 from time import time
 import os
 import sqloquent.tools
@@ -9,7 +10,6 @@ import unittest
 
 DB_FILEPATH = 'tests/test.db'
 MIGRATIONS_PATH = 'tests/migrations'
-MODELS_PATH = 'bookchain/models'
 
 
 class TestBasicE2E(unittest.TestCase):
@@ -85,10 +85,20 @@ class TestBasicE2E(unittest.TestCase):
             'type': models.AccountType.LIABILITY,
             'ledger_id': ledger.id,
         })
-        liability_acct.save()
-        equity_acct.ledger().reload()
-        asset_acct.ledger().reload()
-        liability_acct.ledger().reload()
+
+        # make sub account
+        assert len(liability_acct.children) == 0
+        liability_sub_acct = models.Account.insert({
+            'name': 'Liability Sub Account',
+            'type': models.AccountType.LIABILITY,
+            'ledger_id': ledger.id,
+            'parent_id': liability_acct.id,
+        })
+        assert liability_sub_acct.parent is not None, liability_sub_acct.parent
+        assert liability_sub_acct.parent.id == liability_acct.id, liability_sub_acct.parent
+        liability_acct.children().reload()
+        assert len(liability_acct.children) == 1
+        assert liability_acct.children[0].id == liability_sub_acct.id
 
         # prepare and save a valid transaction
         txn_nonce = os.urandom(16)
@@ -106,7 +116,10 @@ class TestBasicE2E(unittest.TestCase):
             'nonce': txn_nonce,
         })
         asset_entry.account = asset_acct
-        txn = models.Transaction.prepare([equity_entry, asset_entry], str(time()))
+        txn = models.Transaction.prepare(
+            [equity_entry, asset_entry], str(time()),
+            details='Starting capital asset'
+        )
         assert txn.validate()
         equity_entry.save()
         asset_entry.save()
@@ -119,6 +132,31 @@ class TestBasicE2E(unittest.TestCase):
         assert equity_acct.balance() == 10_000_00, equity_acct.balance()
         assert asset_acct.balance() == 10_000_00, asset_acct.balance()
         assert liability_acct.balance() == 0, liability_acct.balance()
+
+        # prepare and save valid transaction for liability sub account
+        txn_nonce = os.urandom(16)
+        equity_entry = models.Entry.insert({
+            'type': models.EntryType.DEBIT,
+            'account_id': equity_acct.id,
+            'amount': 9_99,
+            'nonce': txn_nonce,
+        })
+        liability_entry = models.Entry.insert({
+            'type': models.EntryType.CREDIT,
+            'account_id': liability_sub_acct.id,
+            'amount': 9_99,
+            'nonce': txn_nonce,
+        })
+        txn = models.Transaction.prepare([equity_entry, liability_entry], str(time()))
+        assert txn.validate()
+        txn.save()
+
+        # check balances
+        assert equity_acct.balance() == 10_000_00-9_99, equity_acct.balance()
+        assert asset_acct.balance() == 10_000_00, asset_acct.balance()
+        assert liability_sub_acct.balance() == 9_99, liability_acct.balance()
+        assert liability_acct.balance() == 9_99, liability_acct.balance()
+        assert liability_acct.balance(False) == 0, liability_acct.balance(False)
 
         # prepare invalid transaction: reused entries
         with self.assertRaises(ValueError) as e:
@@ -144,6 +182,18 @@ class TestBasicE2E(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             txn = models.Transaction.prepare([equity_entry, asset_entry], str(int(time())))
         assert 'unbalanced' in str(e.exception)
+
+        # delete something
+        deleted = identity.delete()
+        assert isinstance(deleted, DeletedModel)
+        assert models.Identity.find(identity.id) is None
+
+        # restore deleted identity
+        restored = deleted.restore({'Identity': models.Identity})
+        assert isinstance(restored, models.Identity)
+        assert restored.id == identity.id
+        restored.save()
+        assert models.Identity.find(identity.id) is not None
 
 
 if __name__ == '__main__':
