@@ -20,7 +20,7 @@ classifiers = [
   "Topic :: Office/Business :: Financial :: Accounting",
 ]
 dependencies = [
-  "sqloquent >= 0.4.1",
+  "sqloquent >= 0.4.2",
   "tapescript >= 0.6.1",
 ]
 
