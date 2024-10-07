@@ -8,7 +8,8 @@ from .Ledger import Ledger
 from .Transaction import Transaction
 from .Vendor import Vendor
 from sqloquent.asyncql import (
-    async_contains, async_within, async_has_many, async_belongs_to
+    AsyncDeletedModel, AsyncAttachment,
+    async_contains, async_within, async_has_many, async_belongs_to,
 )
 
 
@@ -36,3 +37,19 @@ Transaction.entries = async_contains(Transaction, Entry, 'entry_ids')
 
 Transaction.ledgers = async_contains(Transaction, Ledger, 'ledger_ids')
 Ledger.transactions = async_within(Ledger, Transaction, 'ledger_ids')
+
+def set_connection_info(db_file_path: str):
+    """Set the connection info for all models to use the specified
+        sqlite3 database file path.
+    """
+    Account.connection_info = db_file_path
+    Correspondence.connection_info = db_file_path
+    Currency.connection_info = db_file_path
+    Customer.connection_info = db_file_path
+    Entry.connection_info = db_file_path
+    Identity.connection_info = db_file_path
+    Ledger.connection_info = db_file_path
+    Transaction.connection_info = db_file_path
+    Vendor.connection_info = db_file_path
+    AsyncDeletedModel.connection_info = db_file_path
+    AsyncAttachment.connection_info = db_file_path

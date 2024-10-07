@@ -1,9 +1,8 @@
-from context import models, bookchain
+from context import models, bookchain, asyncql
 from genericpath import isfile
 from sqlite3 import OperationalError
 from time import time
 import os
-import sqloquent.tools
 import unittest
 
 
@@ -40,6 +39,17 @@ class TestMisc(unittest.TestCase):
         bookchain.set_connection_info('foobar')
         for name in dir(models):
             model = getattr(models, name)
+            if hasattr(model, 'connection_info'):
+                assert model.connection_info == 'foobar', model
+
+        asyncql.set_connection_info(DB_FILEPATH)
+        for name in dir(asyncql):
+            model = getattr(asyncql, name)
+            if hasattr(model, 'connection_info'):
+                assert model.connection_info == DB_FILEPATH, model
+        asyncql.set_connection_info('foobar')
+        for name in dir(asyncql):
+            model = getattr(asyncql, name)
             if hasattr(model, 'connection_info'):
                 assert model.connection_info == 'foobar', model
 
