@@ -29,9 +29,6 @@ dependencies = [
 "Homepage" = "https://github.com/k98kurz/bookchain"
 "Bug Tracker" = "https://github.com/k98kurz/bookchain/issues"
 
-[project.scripts]
-bookchain = "bookchain.tools:run_cli"
-
 [project.optional-dependencies]
 asyncql = [
   "sqloquent[asyncql] >= 0.4.3",
