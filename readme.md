@@ -9,10 +9,13 @@ accomplishing basic bookkeeping tasks.
 
 ## Status
 
-- [x] Base classes
-- [x] Accounting rules
-- [x] Tests
-- [ ] Documentation
+All initially planned features have been implemented and tested.
+
+Open issues can be found [here](https://github.com/k98kurz/bookchain/issues).
+
+The async implementation has an upstream issue from the sqloquent dependency
+that can be tracked [here](https://github.com/k98kurz/sqloquent/issues/16). Once
+that is fixed, the dependency will be updated, and this notice will be removed.
 
 ## Overview
 
@@ -57,7 +60,12 @@ CREDIT and DEBIT.
 `Transaction` represents a transaction made of `Entry`s. It includes the `Entry`
 ids, `Ledger` ids, a timestamp, details, and the auth script(s). Each
 `Transaction` must include entries that balance the number of credits and debits
-applied to each ledger affected by the transaction.
+applied to each ledger affected by the transaction. Use `Transaction.prepare` to
+prepare a transaction -- it will raise validation errors if the transaction is
+not valid -- then call `.save()` on the result to persist it to the database.
+Transactions in the database can be validated by using `.validate()`, which will
+return `True` if it is valid and `False` if it is not (it will also raise errors
+in some situations that require more information about the validation failure).
 
 `Correspondence` represents a correspondent credit relationship between several
 `Identity`s.
@@ -82,6 +90,25 @@ Entries to provide valid auth scripts. These scripts are executed using
 tapescript. If some tapescript runtime values are required for validation,
 e.g. cache or plugins, they can be saved in Transaction.details and passed to
 `Transaction.validate` and `Account.validate_script`.
+
+# Tests
+
+There are a total of 10 tests (6 e2e tests and 4 unit tests for miscellaneous
+tools/features). To run them, clone the repo, set up a virtual environment
+(e.g. `python -m venv venv && source venv/bin/activate`), install the
+dependencies with `pip install -r requirements.txt`, and then run the following:
+`find tests -name test_*.py -print -exec python {} \;`. On Windows, the 7 test
+files will have to be individually run with the following:
+
+```bash
+python tests/test_advanced_e2e.py
+python tests/test_async_advanced_e2e.py
+python tests/test_async_basic_e2e.py
+python tests/test_async_correspondences_e2e.py
+python tests/test_basic_e2e.py
+python tests/test_correspondences_e2e.py
+python tests/test_misc.py
+```
 
 # Non-commercial/Personal Use License
 
