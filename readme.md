@@ -91,7 +91,14 @@ tapescript. If some tapescript runtime values are required for validation,
 e.g. cache or plugins, they can be saved in Transaction.details and passed to
 `Transaction.validate` and `Account.validate_script`.
 
-# Tests
+## More Resources
+
+Check out the [Pycelium discord server](https://discord.gg/b2QFEJDX69). If you
+experience a problem, please discuss it on the Discord server. All suggestions
+for improvement are also welcome, and the best place for that is also Discord.
+If you experience a bug and do not use Discord, open an issue on Github.
+
+## Tests
 
 There are a total of 10 tests (6 e2e tests and 4 unit tests for miscellaneous
 tools/features). To run them, clone the repo, set up a virtual environment
@@ -110,7 +117,7 @@ python tests/test_correspondences_e2e.py
 python tests/test_misc.py
 ```
 
-# Non-commercial/Personal Use License
+## Non-commercial/Personal Use License
 
 Copyright (c) 2024 Jonathan Voss (k98kurz)
 
