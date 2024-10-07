@@ -1,9 +1,11 @@
-from context import models
+from asyncio import run
+from context import asyncql
 from genericpath import isfile
 from nacl.signing import SigningKey
 from packify import pack
 from time import time
 import os
+import sqloquent.asyncql
 import sqloquent.tools
 import tapescript
 import unittest
@@ -19,9 +21,9 @@ class TestCorrespondencesE2E(unittest.TestCase):
     def automigrate(cls):
         sqloquent.tools.publish_migrations(MIGRATIONS_PATH)
         tomigrate = [
-            models.Identity, models.Currency, models.Ledger,
-            models.Account, models.Entry, models.Transaction,
-            models.Correspondence,
+            asyncql.Identity, asyncql.Currency, asyncql.Ledger,
+            asyncql.Account, asyncql.Entry, asyncql.Transaction,
+            asyncql.Correspondence,
         ]
         for model in tomigrate:
             name = model.__name__
@@ -32,26 +34,26 @@ class TestCorrespondencesE2E(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        models.Identity.connection_info = DB_FILEPATH
-        models.Currency.connection_info = DB_FILEPATH
-        models.Correspondence.connection_info = DB_FILEPATH
-        models.Ledger.connection_info = DB_FILEPATH
-        models.Account.connection_info = DB_FILEPATH
-        models.Entry.connection_info = DB_FILEPATH
-        models.Transaction.connection_info = DB_FILEPATH
-        sqloquent.DeletedModel.connection_info = DB_FILEPATH
+        asyncql.Identity.connection_info = DB_FILEPATH
+        asyncql.Currency.connection_info = DB_FILEPATH
+        asyncql.Correspondence.connection_info = DB_FILEPATH
+        asyncql.Ledger.connection_info = DB_FILEPATH
+        asyncql.Account.connection_info = DB_FILEPATH
+        asyncql.Entry.connection_info = DB_FILEPATH
+        asyncql.Transaction.connection_info = DB_FILEPATH
+        sqloquent.asyncql.AsyncDeletedModel.connection_info = DB_FILEPATH
         cls.automigrate()
         super().setUpClass()
 
     def setUp(self):
-        models.Identity.query().delete()
-        models.Currency.query().delete()
-        models.Correspondence.query().delete()
-        models.Ledger.query().delete()
-        models.Account.query().delete()
-        models.Entry.query().delete()
-        models.Transaction.query().delete()
-        sqloquent.DeletedModel.query().delete()
+        run(asyncql.Identity.query().delete())
+        run(asyncql.Currency.query().delete())
+        run(asyncql.Correspondence.query().delete())
+        run(asyncql.Ledger.query().delete())
+        run(asyncql.Account.query().delete())
+        run(asyncql.Entry.query().delete())
+        run(asyncql.Transaction.query().delete())
+        run(sqloquent.asyncql.AsyncDeletedModel.query().delete())
         self.setup_cryptographic_values()
         super().setUp()
 
@@ -100,10 +102,10 @@ class TestCorrespondencesE2E(unittest.TestCase):
         )
 
     def test_e2e(self):
-        assert models.Account.query().count() == 0
+        assert run(asyncql.Account.query().count()) == 0
 
         # set up currency
-        currency = models.Currency.insert({
+        currency = run(asyncql.Currency.insert({
             'name': 'Median Human Hour',
             'prefix_symbol': 'Ħ',
             'fx_symbol': 'MHH',
@@ -111,138 +113,138 @@ class TestCorrespondencesE2E(unittest.TestCase):
             'decimals': 2,
             'details': 'Abstract value of one median hour of human time. ' +
                 '1 Hour = 60 Minutes = 3600 Seconds',
-        })
+        }))
 
         # set up alice, ledger_alice, accounts, and starting capital transaction
-        alice: models.Identity = models.Identity.insert({
+        alice: asyncql.Identity = run(asyncql.Identity.insert({
             'name': 'Alice',
             'pubkey': self.pkey_alice,
             'seed': self.seed_alice,
-        })
-        ledger_alice = models.Ledger.insert({
+        }))
+        ledger_alice = run(asyncql.Ledger.insert({
             'name': 'Current Ledger',
             'identity_id': alice.id,
             'currency_id': currency.id,
-        })
-        equity_acct_alice = models.Account({
+        }))
+        equity_acct_alice = asyncql.Account({
             'name': 'General Equity (Alice)',
-            'type': models.AccountType.EQUITY.value,
+            'type': asyncql.AccountType.EQUITY.value,
             'ledger_id': ledger_alice.id,
         })
         equity_acct_alice.locking_scripts = {
-            models.EntryType.DEBIT: self.locking_script_alice
+            asyncql.EntryType.DEBIT: self.locking_script_alice
         }
-        equity_acct_alice.save()
-        asset_acct_alice = models.Account({
+        run(equity_acct_alice.save())
+        asset_acct_alice = asyncql.Account({
             'name': 'General Asset (Alice)',
-            'type': models.AccountType.ASSET.value,
+            'type': asyncql.AccountType.ASSET.value,
             'ledger_id': ledger_alice.id,
         })
         asset_acct_alice.locking_scripts = {
-            models.EntryType.CREDIT: self.locking_script_alice
+            asyncql.EntryType.CREDIT: self.locking_script_alice
         }
-        asset_acct_alice.save()
-        liability_acct_alice = models.Account.insert({
+        run(asset_acct_alice.save())
+        liability_acct_alice = run(asyncql.Account.insert({
             'name': 'General Liability (Alice)',
-            'type': models.AccountType.LIABILITY.value,
+            'type': asyncql.AccountType.LIABILITY.value,
             'ledger_id': ledger_alice.id,
-        })
+        }))
         liability_acct_alice.locking_scripts = {
-            models.EntryType.DEBIT: self.locking_script_alice,
-            models.EntryType.CREDIT: self.locking_script_alice,
+            asyncql.EntryType.DEBIT: self.locking_script_alice,
+            asyncql.EntryType.CREDIT: self.locking_script_alice,
         }
-        liability_acct_alice.save()
-        equity_acct_alice.ledger().reload()
-        asset_acct_alice.ledger().reload()
-        liability_acct_alice.ledger().reload()
+        run(liability_acct_alice.save())
+        run(equity_acct_alice.ledger().reload())
+        run(asset_acct_alice.ledger().reload())
+        run(liability_acct_alice.ledger().reload())
         # fund the Identity with starting capital
         nonce = os.urandom(16)
-        equity_entry = models.Entry({
-            'type': models.EntryType.CREDIT,
+        equity_entry = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
             'account_id': equity_acct_alice.id,
             'amount': 2_000 * 60*60, # 2000 hours = 50 weeks * 40 hours/week
             'nonce': nonce,
         })
         equity_entry.account = equity_acct_alice
-        asset_entry = models.Entry({
-            'type': models.EntryType.DEBIT,
+        asset_entry = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
             'account_id': asset_acct_alice.id,
             'amount': 2_000 * 60*60, # 2000 hours = 50 weeks * 40 hours/week
             'nonce': nonce,
         })
         asset_entry.account = asset_acct_alice
-        txn = models.Transaction.prepare([equity_entry, asset_entry], str(time()))
-        equity_entry.save()
-        asset_entry.save()
-        txn.save()
+        txn = run(asyncql.Transaction.prepare([equity_entry, asset_entry], str(time())))
+        run(equity_entry.save())
+        run(asset_entry.save())
+        run(txn.save())
 
         # set up bob, ledger_bob, and some accounts
-        bob: models.Identity = models.Identity.insert({
+        bob: asyncql.Identity = run(asyncql.Identity.insert({
             'name': 'Bob',
             'pubkey': self.pkey_bob,
             'seed': self.seed_bob,
-        })
-        ledger_bob = models.Ledger.insert({
+        }))
+        ledger_bob = run(asyncql.Ledger.insert({
             'name': 'Current Ledger',
             'identity_id': bob.id,
             'currency_id': currency.id,
-        })
-        equity_acct_bob = models.Account({
+        }))
+        equity_acct_bob = asyncql.Account({
             'name': 'General Equity (Bob)',
-            'type': models.AccountType.EQUITY.value,
+            'type': asyncql.AccountType.EQUITY.value,
             'ledger_id': ledger_bob.id,
         })
         equity_acct_bob.locking_scripts = {
-            models.EntryType.DEBIT: self.locking_script_bob
+            asyncql.EntryType.DEBIT: self.locking_script_bob
         }
-        equity_acct_bob.save()
-        asset_acct_bob = models.Account({
+        run(equity_acct_bob.save())
+        asset_acct_bob = asyncql.Account({
             'name': 'General Asset (Bob)',
-            'type': models.AccountType.ASSET.value,
+            'type': asyncql.AccountType.ASSET.value,
             'ledger_id': ledger_bob.id,
         })
         asset_acct_bob.locking_scripts = {
-            models.EntryType.CREDIT: self.locking_script_bob
+            asyncql.EntryType.CREDIT: self.locking_script_bob
         }
-        asset_acct_bob.save()
-        liability_acct_bob = models.Account.insert({
+        run(asset_acct_bob.save())
+        liability_acct_bob = run(asyncql.Account.insert({
             'name': 'General Liability (Bob)',
-            'type': models.AccountType.LIABILITY.value,
+            'type': asyncql.AccountType.LIABILITY.value,
             'ledger_id': ledger_bob.id,
-        })
+        }))
         liability_acct_bob.locking_scripts = {
-            models.EntryType.DEBIT: self.locking_script_bob,
-            models.EntryType.CREDIT: self.locking_script_bob,
+            asyncql.EntryType.DEBIT: self.locking_script_bob,
+            asyncql.EntryType.CREDIT: self.locking_script_bob,
         }
-        liability_acct_bob.save()
-        equity_acct_bob.ledger().reload()
-        asset_acct_bob.ledger().reload()
-        liability_acct_bob.ledger().reload()
+        run(liability_acct_bob.save())
+        run(equity_acct_bob.ledger().reload())
+        run(asset_acct_bob.ledger().reload())
+        run(liability_acct_bob.ledger().reload())
         # fund the Identity with starting capital
         nonce = os.urandom(16)
-        equity_entry = models.Entry({
-            'type': models.EntryType.CREDIT,
+        equity_entry = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
             'account_id': equity_acct_bob.id,
             'amount': 2_000 * 60*60, # 2000 hours = 50 weeks * 40 hours/week
             'nonce': nonce,
         })
         equity_entry.account = equity_acct_bob
-        asset_entry = models.Entry({
-            'type': models.EntryType.DEBIT,
+        asset_entry = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
             'account_id': asset_acct_bob.id,
             'amount': 2_000 * 60*60, # 2000 hours = 50 weeks * 40 hours/week
             'nonce': nonce,
         })
         asset_entry.account = asset_acct_bob
-        txn = models.Transaction.prepare([equity_entry, asset_entry], str(time()))
-        equity_entry.save()
-        asset_entry.save()
-        txn.save()
+        txn = run(asyncql.Transaction.prepare([equity_entry, asset_entry], str(time())))
+        run(equity_entry.save())
+        run(asset_entry.save())
+        run(txn.save())
 
         # set up Correspondence
-        assert alice.correspondences().query().count() == 0
-        assert len(alice.correspondents(reload=True)) == 0
-        models.Correspondence.insert({
+        assert run(alice.correspondences().query().count()) == 0
+        assert len(run(alice.correspondents(reload=True))) == 0
+        run(asyncql.Correspondence.insert({
             'identity_ids': ','.join(sorted([alice.id, bob.id])),
             'ledger_ids': ','.join(sorted([ledger_alice.id, ledger_bob.id])),
             'details': pack({
@@ -256,97 +258,97 @@ class TestCorrespondencesE2E(unittest.TestCase):
                     bob.id: self.locking_script_bob,
                 },
             })
-        })
-        assert alice.correspondences().query().count() == 1
-        assert len(alice.correspondents(reload=True)) == 1
-        assert alice.correspondents()[0].id == bob.id
-        assert bob.correspondences().query().count() == 1
-        assert len(bob.correspondents(reload=True)) == 1
-        assert bob.correspondents()[0].id == alice.id
+        }))
+        assert run(alice.correspondences().query().count()) == 1
+        assert len(run(alice.correspondents(reload=True))) == 1
+        assert run(alice.correspondents())[0].id == bob.id
+        assert run(bob.correspondences().query().count()) == 1
+        assert len(run(bob.correspondents(reload=True))) == 1
+        assert run(bob.correspondents())[0].id == alice.id
 
         # set up correspondent accounts for alice
-        cor_accts1 = alice.get_correspondent_accounts(bob)
+        cor_accts1 = run(alice.get_correspondent_accounts(bob))
         assert len(cor_accts1) == 0, cor_accts1
-        nostro_alice = models.Account()
+        nostro_alice = asyncql.Account()
         nostro_alice.name = f'Receivable from {bob.name} ({bob.id})'
-        nostro_alice.type = models.AccountType.NOSTRO_ASSET
+        nostro_alice.type = asyncql.AccountType.NOSTRO_ASSET
         nostro_alice.ledger_id = ledger_alice.id
         nostro_alice.details = bob.id
         nostro_alice.locking_scripts = {
-            models.EntryType.CREDIT: self.locking_script_alice,
-            models.EntryType.DEBIT: self.locking_script_bob,
+            asyncql.EntryType.CREDIT: self.locking_script_alice,
+            asyncql.EntryType.DEBIT: self.locking_script_bob,
         }
-        nostro_alice.save()
+        run(nostro_alice.save())
 
-        vostro_alice = models.Account()
+        vostro_alice = asyncql.Account()
         vostro_alice.name = f'Payable to {bob.name} ({bob.id})'
-        vostro_alice.type = models.AccountType.VOSTRO_LIABILITY
+        vostro_alice.type = asyncql.AccountType.VOSTRO_LIABILITY
         vostro_alice.ledger_id = ledger_alice.id
         vostro_alice.details = bob.id
         vostro_alice.locking_scripts = {
-            models.EntryType.CREDIT: self.locking_script_alice,
-            models.EntryType.DEBIT: self.locking_script_bob,
+            asyncql.EntryType.CREDIT: self.locking_script_alice,
+            asyncql.EntryType.DEBIT: self.locking_script_bob,
         }
-        vostro_alice.save()
-        cor_accts1 = alice.get_correspondent_accounts(bob)
+        run(vostro_alice.save())
+        cor_accts1 = run(alice.get_correspondent_accounts(bob))
         assert len(cor_accts1) == 2, cor_accts1
 
         # set up correspondent accounts for bob
-        cor_accts2 = bob.get_correspondent_accounts(alice)
+        cor_accts2 = run(bob.get_correspondent_accounts(alice))
         assert len(cor_accts2) == 2, cor_accts2
 
-        nostro_bob = models.Account()
+        nostro_bob = asyncql.Account()
         nostro_bob.name = f'Receivable from {alice.name} ({alice.id})'
-        nostro_bob.type = models.AccountType.NOSTRO_ASSET
+        nostro_bob.type = asyncql.AccountType.NOSTRO_ASSET
         nostro_bob.ledger_id = ledger_bob.id
         nostro_bob.details = alice.id
         nostro_bob.locking_scripts = {
-            models.EntryType.CREDIT: self.locking_script_bob,
-            models.EntryType.DEBIT: self.locking_script_alice,
+            asyncql.EntryType.CREDIT: self.locking_script_bob,
+            asyncql.EntryType.DEBIT: self.locking_script_alice,
         }
-        nostro_bob.save()
+        run(nostro_bob.save())
 
-        vostro_bob = models.Account()
+        vostro_bob = asyncql.Account()
         vostro_bob.name = f'Payable to {alice.name} ({alice.id})'
-        vostro_bob.type = models.AccountType.VOSTRO_LIABILITY
+        vostro_bob.type = asyncql.AccountType.VOSTRO_LIABILITY
         vostro_bob.ledger_id = ledger_bob.id
         vostro_bob.details = alice.id
         vostro_bob.locking_scripts = {
-            models.EntryType.CREDIT: self.locking_script_bob,
-            models.EntryType.DEBIT: self.locking_script_alice,
+            asyncql.EntryType.CREDIT: self.locking_script_bob,
+            asyncql.EntryType.DEBIT: self.locking_script_alice,
         }
-        vostro_bob.save()
-        cor_accts2 = bob.get_correspondent_accounts(alice)
+        run(vostro_bob.save())
+        cor_accts2 = run(bob.get_correspondent_accounts(alice))
         assert len(cor_accts2) == 4, cor_accts2
 
         # create a valid payment transaction: Alice pays Bob 200
         nonce = os.urandom(16)
-        equity_entry_alice = models.Entry({
-            'type': models.EntryType.DEBIT,
+        equity_entry_alice = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
             'amount': 200,
             'nonce': nonce,
             'account_id': equity_acct_alice.id,
         })
         equity_entry_alice.details = 'Debit Alice Equity'
         equity_entry_alice.account = equity_acct_alice
-        liability_entry_alice = models.Entry({
-            'type': models.EntryType.CREDIT,
+        liability_entry_alice = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
             'amount': 200,
             'nonce': nonce,
             'account_id': vostro_alice.id,
         })
         liability_entry_alice.details = 'Credit Alice liability'
         liability_entry_alice.account = vostro_alice
-        equity_entry_bob = models.Entry({
-            'type': models.EntryType.CREDIT,
+        equity_entry_bob = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
             'amount': 200,
             'nonce': nonce,
             'account_id': equity_acct_bob.id,
         })
         equity_entry_bob.details = 'Credit Bob Equity'
         equity_entry_bob.account = equity_acct_bob
-        asset_entry_bob = models.Entry({
-            'type': models.EntryType.DEBIT,
+        asset_entry_bob = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
             'amount': 200,
             'nonce': nonce,
             'account_id': nostro_bob.id,
@@ -364,40 +366,40 @@ class TestCorrespondencesE2E(unittest.TestCase):
                 alice.seed, asset_entry_bob.get_sigfields(), self.committed_script_alice
             ).bytes,
         }
-        txn = models.Transaction.prepare(
+        txn = run(asyncql.Transaction.prepare(
             [equity_entry_alice, liability_entry_alice, equity_entry_bob, asset_entry_bob],
             str(time()), auth_scripts
-        )
-        txn.save()
+        ))
+        run(txn.save())
 
         # create an invalid transaction: valid auth, invalid entries
         nonce = os.urandom(16)
-        equity_entry_alice = models.Entry({
-            'type': models.EntryType.DEBIT,
+        equity_entry_alice = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
             'amount': 100,
             'nonce': nonce,
             'account_id': equity_acct_alice.id,
         })
         equity_entry_alice.details = 'Debit Alice Equity'
         equity_entry_alice.account = equity_acct_alice
-        liability_entry_alice = models.Entry({
-            'type': models.EntryType.CREDIT,
+        liability_entry_alice = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
             'amount': 100,
             'nonce': nonce,
             'account_id': vostro_alice.id,
         })
         liability_entry_alice.details = 'Credit Alice liability'
         liability_entry_alice.account = vostro_alice
-        equity_entry_bob = models.Entry({
-            'type': models.EntryType.CREDIT,
+        equity_entry_bob = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
             'amount': 100,
             'nonce': nonce,
             'account_id': equity_acct_bob.id,
         })
         equity_entry_bob.details = 'Credit Bob Equity'
         equity_entry_bob.account = equity_acct_bob
-        liability_entry_bob = models.Entry({
-            'type': models.EntryType.DEBIT,
+        liability_entry_bob = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
             'amount': 100,
             'nonce': nonce,
             'account_id': vostro_bob.id,
@@ -416,17 +418,17 @@ class TestCorrespondencesE2E(unittest.TestCase):
             ).bytes,
         }
         with self.assertRaises(AssertionError) as e:
-            txn = models.Transaction.prepare(
+            txn = run(asyncql.Transaction.prepare(
                 [equity_entry_alice, liability_entry_alice, equity_entry_bob, liability_entry_bob],
                 str(time()), auth_scripts
-            )
+            ))
         assert 'validation failed' in str(e.exception)
 
     def test_helpers_e2e(self):
-        assert models.Account.query().count() == 0
+        assert run(asyncql.Account.query().count()) == 0
 
         # set up currency
-        currency = models.Currency.insert({
+        currency = run(asyncql.Currency.insert({
             'name': 'Median Human Hour',
             'prefix_symbol': 'Ħ',
             'fx_symbol': 'MHH',
@@ -434,116 +436,116 @@ class TestCorrespondencesE2E(unittest.TestCase):
             'decimals': 2,
             'details': 'Abstract value of one median hour of human time. ' +
                 '1 Hour = 60 Minutes = 3600 Seconds',
-        })
+        }))
 
         # set up alice, ledger_alice, accounts, and starting capital transaction
-        alice: models.Identity = models.Identity.insert({
+        alice: asyncql.Identity = run(asyncql.Identity.insert({
             'name': 'Alice',
             'pubkey': self.pkey_alice,
             'seed': self.seed_alice,
-        })
-        ledger_alice = models.Ledger.insert({
+        }))
+        ledger_alice = run(asyncql.Ledger.insert({
             'name': 'Current Ledger',
             'identity_id': alice.id,
             'currency_id': currency.id,
-        })
+        }))
         ledger_alice.owner = alice
         asset_acct_alice, liability_acct_alice, equity_acct_alice = ledger_alice.setup_basic_accounts()
 
         equity_acct_alice.locking_scripts = {
-            models.EntryType.DEBIT: self.locking_script_alice
+            asyncql.EntryType.DEBIT: self.locking_script_alice
         }
-        equity_acct_alice.save()
+        run(equity_acct_alice.save())
 
         asset_acct_alice.locking_scripts = {
-            models.EntryType.CREDIT: self.locking_script_alice
+            asyncql.EntryType.CREDIT: self.locking_script_alice
         }
-        asset_acct_alice.save()
+        run(asset_acct_alice.save())
 
         liability_acct_alice.locking_scripts = {
-            models.EntryType.DEBIT: self.locking_script_alice,
-            models.EntryType.CREDIT: self.locking_script_alice,
+            asyncql.EntryType.DEBIT: self.locking_script_alice,
+            asyncql.EntryType.CREDIT: self.locking_script_alice,
         }
-        liability_acct_alice.save()
-        equity_acct_alice.ledger().reload()
-        asset_acct_alice.ledger().reload()
-        liability_acct_alice.ledger().reload()
+        run(liability_acct_alice.save())
+        run(equity_acct_alice.ledger().reload())
+        run(asset_acct_alice.ledger().reload())
+        run(liability_acct_alice.ledger().reload())
 
         # fund the Identity with starting capital
         nonce = os.urandom(16)
-        equity_entry = models.Entry({
-            'type': models.EntryType.CREDIT,
+        equity_entry = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
             'account_id': equity_acct_alice.id,
             'amount': 2_000 * 60*60, # 2000 hours = 50 weeks * 40 hours/week
             'nonce': nonce,
         })
         equity_entry.account = equity_acct_alice
-        asset_entry = models.Entry({
-            'type': models.EntryType.DEBIT,
+        asset_entry = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
             'account_id': asset_acct_alice.id,
             'amount': 2_000 * 60*60, # 2000 hours = 50 weeks * 40 hours/week
             'nonce': nonce,
         })
         asset_entry.account = asset_acct_alice
-        txn = models.Transaction.prepare([equity_entry, asset_entry], str(time()))
-        equity_entry.save()
-        asset_entry.save()
-        txn.save()
+        txn = run(asyncql.Transaction.prepare([equity_entry, asset_entry], str(time())))
+        run(equity_entry.save())
+        run(asset_entry.save())
+        run(txn.save())
 
         # set up bob, ledger_bob, and some accounts
-        bob: models.Identity = models.Identity.insert({
+        bob: asyncql.Identity = run(asyncql.Identity.insert({
             'name': 'Bob',
             'pubkey': self.pkey_bob,
             'seed': self.seed_bob,
-        })
-        ledger_bob = models.Ledger.insert({
+        }))
+        ledger_bob = run(asyncql.Ledger.insert({
             'name': 'Current Ledger',
             'identity_id': bob.id,
             'currency_id': currency.id,
-        })
+        }))
         asset_acct_bob, liability_acct_bob, equity_acct_bob = ledger_bob.setup_basic_accounts()
         equity_acct_bob.locking_scripts = {
-            models.EntryType.DEBIT: self.locking_script_bob
+            asyncql.EntryType.DEBIT: self.locking_script_bob
         }
-        equity_acct_bob.save()
+        run(equity_acct_bob.save())
         asset_acct_bob.locking_scripts = {
-            models.EntryType.CREDIT: self.locking_script_bob
+            asyncql.EntryType.CREDIT: self.locking_script_bob
         }
-        asset_acct_bob.save()
+        run(asset_acct_bob.save())
         liability_acct_bob.locking_scripts = {
-            models.EntryType.DEBIT: self.locking_script_bob,
-            models.EntryType.CREDIT: self.locking_script_bob,
+            asyncql.EntryType.DEBIT: self.locking_script_bob,
+            asyncql.EntryType.CREDIT: self.locking_script_bob,
         }
-        liability_acct_bob.save()
-        equity_acct_bob.ledger().reload()
-        asset_acct_bob.ledger().reload()
-        liability_acct_bob.ledger().reload()
+        run(liability_acct_bob.save())
+        run(equity_acct_bob.ledger().reload())
+        run(asset_acct_bob.ledger().reload())
+        run(liability_acct_bob.ledger().reload())
 
         # fund the Identity with starting capital
         nonce = os.urandom(16)
-        equity_entry = models.Entry({
-            'type': models.EntryType.CREDIT,
+        equity_entry = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
             'account_id': equity_acct_bob.id,
             'amount': 2_000 * 60*60, # 2000 hours = 50 weeks * 40 hours/week
             'nonce': nonce,
         })
         equity_entry.account = equity_acct_bob
-        asset_entry = models.Entry({
-            'type': models.EntryType.DEBIT,
+        asset_entry = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
             'account_id': asset_acct_bob.id,
             'amount': 2_000 * 60*60, # 2000 hours = 50 weeks * 40 hours/week
             'nonce': nonce,
         })
         asset_entry.account = asset_acct_bob
-        txn = models.Transaction.prepare([equity_entry, asset_entry], str(time()))
-        equity_entry.save()
-        asset_entry.save()
-        txn.save()
+        txn = run(asyncql.Transaction.prepare([equity_entry, asset_entry], str(time())))
+        run(equity_entry.save())
+        run(asset_entry.save())
+        run(txn.save())
 
         # set up Correspondence
-        assert alice.correspondences().query().count() == 0
-        assert len(alice.correspondents(reload=True)) == 0
-        correspondence: models.Correspondence = models.Correspondence.insert({
+        assert run(alice.correspondences().query().count()) == 0
+        assert len(run(alice.correspondents(reload=True))) == 0
+        correspondence: asyncql.Correspondence = run(asyncql.Correspondence.insert({
             'identity_ids': ','.join(sorted([alice.id, bob.id])),
             'ledger_ids': ','.join(sorted([ledger_alice.id, ledger_bob.id])),
             'details': pack({
@@ -557,37 +559,37 @@ class TestCorrespondencesE2E(unittest.TestCase):
                     bob.id: self.locking_script_bob,
                 },
             })
-        })
-        assert alice.correspondences().query().count() == 1
-        assert len(alice.correspondents(reload=True)) == 1
-        assert alice.correspondents()[0].id == bob.id
-        assert bob.correspondences().query().count() == 1
-        assert len(bob.correspondents(reload=True)) == 1
-        assert bob.correspondents()[0].id == alice.id
+        }))
+        assert run(alice.correspondences().query().count()) == 1
+        assert len(run(alice.correspondents(reload=True))) == 1
+        assert run(alice.correspondents())[0].id == bob.id
+        assert run(bob.correspondences().query().count()) == 1
+        assert len(run(bob.correspondents(reload=True))) == 1
+        assert run(bob.correspondents())[0].id == alice.id
 
         # set up correspondence accounts
-        cor_accts = correspondence.setup_accounts({
+        cor_accts = run(correspondence.setup_accounts({
             alice.id: self.locking_script_alice,
             bob.id: self.locking_script_bob,
-        })
+        }))
         for _, acct in cor_accts[alice.id].items():
-            acct.save()
-            acct.ledger().reload()
+            run(acct.save())
+            run(acct.ledger().reload())
         for _, acct in cor_accts[bob.id].items():
-            acct.save()
-            acct.ledger().reload()
-        nostro_acct_alice = cor_accts[alice.id][models.AccountType.NOSTRO_ASSET]
-        vostro_acct_alice = cor_accts[alice.id][models.AccountType.VOSTRO_LIABILITY]
-        nostro_acct_bob = cor_accts[bob.id][models.AccountType.NOSTRO_ASSET]
-        vostro_acct_bob = cor_accts[bob.id][models.AccountType.VOSTRO_LIABILITY]
+            run(acct.save())
+            run(acct.ledger().reload())
+        nostro_acct_alice = cor_accts[alice.id][asyncql.AccountType.NOSTRO_ASSET]
+        vostro_acct_alice = cor_accts[alice.id][asyncql.AccountType.VOSTRO_LIABILITY]
+        nostro_acct_bob = cor_accts[bob.id][asyncql.AccountType.NOSTRO_ASSET]
+        vostro_acct_bob = cor_accts[bob.id][asyncql.AccountType.VOSTRO_LIABILITY]
 
         # create txn: Alice credits her ledger's nostro to pay Bob
-        entries, _ = correspondence.pay_correspondent(alice, bob, 100, os.urandom(16))
+        entries, _ = run(correspondence.pay_correspondent(alice, bob, 100, os.urandom(16)))
         assert len([e for e in entries if e.account_id == equity_acct_alice.id]) == 1
         assert len([e for e in entries if e.account_id == equity_acct_bob.id]) == 1
         assert len([e for e in entries if e.account_id == nostro_acct_alice.id]) == 1
         assert len([e for e in entries if e.account_id == vostro_acct_bob.id]) == 1
-        txn = models.Transaction.prepare(entries, str(time()), auth_scripts={
+        txn = run(asyncql.Transaction.prepare(entries, str(time()), auth_scripts={
             equity_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
                 self.seed_alice, entries[0].get_sigfields(), self.committed_script_alice
             ).bytes,
@@ -597,18 +599,18 @@ class TestCorrespondencesE2E(unittest.TestCase):
             vostro_acct_bob.id: tapescript.tools.make_taproot_witness_keyspend(
                 self.seed_alice, entries[3].get_sigfields(), self.committed_script_alice
             ).bytes,
-        })
-        assert models.Entry.query({'id': entries[0].id}).count() == 0
-        txn.save()
-        assert models.Entry.query({'id': entries[0].id}).count() == 1
+        }))
+        assert run(asyncql.Entry.query({'id': entries[0].id}).count()) == 0
+        run(txn.save())
+        assert run(asyncql.Entry.query({'id': entries[0].id}).count()) == 1
 
         # create txn: Alice credits her ledger's vostro to pay Bob
-        _, entries = correspondence.pay_correspondent(alice, bob, 100, os.urandom(16))
+        _, entries = run(correspondence.pay_correspondent(alice, bob, 100, os.urandom(16)))
         assert len([e for e in entries if e.account_id == equity_acct_alice.id]) == 1
         assert len([e for e in entries if e.account_id == equity_acct_bob.id]) == 1
         assert len([e for e in entries if e.account_id == vostro_acct_alice.id]) == 1
         assert len([e for e in entries if e.account_id == nostro_acct_bob.id]) == 1
-        txn = models.Transaction.prepare(entries, str(time()), auth_scripts={
+        txn = run(asyncql.Transaction.prepare(entries, str(time()), auth_scripts={
             equity_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
                 self.seed_alice, entries[0].get_sigfields(), self.committed_script_alice
             ).bytes,
@@ -618,11 +620,11 @@ class TestCorrespondencesE2E(unittest.TestCase):
             nostro_acct_bob.id: tapescript.tools.make_taproot_witness_keyspend(
                 self.seed_alice, entries[3].get_sigfields(), self.committed_script_alice
             ).bytes,
-        })
-        txn.save()
+        }))
+        run(txn.save())
 
         # check balances
-        balances = correspondence.balances()
+        balances = run(correspondence.balances())
         assert type(balances) is dict
         assert alice.id in balances
         assert bob.id in balances

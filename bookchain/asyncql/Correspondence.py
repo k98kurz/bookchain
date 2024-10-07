@@ -3,11 +3,11 @@ from .Account import Account, AccountType
 from .Entry import Entry, EntryType
 from .Identity import Identity
 from .Ledger import Ledger
-from sqloquent import HashedModel, RelatedCollection
+from sqloquent.asyncql import AsyncHashedModel, AsyncRelatedCollection
 from sqloquent.errors import vert
 
 
-class Correspondence(HashedModel):
+class Correspondence(AsyncHashedModel):
     table: str = 'correspondences'
     id_column: str = 'id'
     columns: tuple[str] = ('id', 'identity_ids', 'ledger_ids', 'details')
@@ -15,39 +15,39 @@ class Correspondence(HashedModel):
     identity_ids: str
     ledger_ids: str
     details: str
-    identities: RelatedCollection
-    ledgers: RelatedCollection
+    identities: AsyncRelatedCollection
+    ledgers: AsyncRelatedCollection
 
-    def get_accounts(self) -> list[Account]:
+    async def get_accounts(self) -> list[Account]:
         """Loads the relevant nostro and vostro Accounts for the
             Identities that are part of the Correspondence.
         """
         accounts = {}
-        self.ledgers().reload()
-        self.identities().reload()
+        await self.ledgers().reload()
+        await self.identities().reload()
         id1: Identity = self.identities[0]
         for identity in self.identities:
             if identity is id1:
                 continue
             identity: Identity
-            for acct in id1.get_correspondent_accounts(identity):
-                acct.ledger().reload()
+            for acct in await id1.get_correspondent_accounts(identity):
+                await acct.ledger().reload()
                 accounts[acct.id] = acct
         acct_ids = set([aid for aid in accounts])
         return [accounts[i] for i in acct_ids]
 
-    def setup_accounts(self, locking_scripts: dict[str, bytes]) -> dict[str, dict[AccountType, Account]]:
+    async def setup_accounts(self, locking_scripts: dict[str, bytes]) -> dict[str, dict[AccountType, Account]]:
         """Takes a dict mapping Identity ID to tapescript locking
             scripts. Returns a dict of Accounts necessary for setting up
             the credit Correspondence of form
             { identity.id: { AccountType: Account }}.
         """
         accounts = {}
-        self.identities().reload()
+        await self.identities().reload()
         for identity1 in self.identities:
             identity1: Identity
             for identity2 in [i for i in self.identities if i.id != identity1.id]:
-                identity1.ledgers().reload()
+                await identity1.ledgers().reload()
                 ledger = [l for l in identity1.ledgers if l.id in self.ledger_ids][0]
                 identity2: Identity
                 nostro = Account({
@@ -76,8 +76,9 @@ class Correspondence(HashedModel):
                 }
         return accounts
 
-    def pay_correspondent(self, payer: Identity, payee: Identity, amount: int,
-                          txn_nonce: bytes) -> tuple[list[Entry], list[Entry]]:
+    async def pay_correspondent(self, payer: Identity, payee: Identity,
+                                amount: int, txn_nonce: bytes
+                                ) -> tuple[list[Entry], list[Entry]]:
         """Prepares two lists of entries in which the payer remits to
             the payee the given amount: one in which the nostro account
             on the payer's ledger is credited and one in which the
@@ -87,19 +88,19 @@ class Correspondence(HashedModel):
              f'payer ({payer.name}, {payer.id}) not in correspondence identities')
         vert(payee.id in self.identity_ids,
              f'payee ({payee.name}, {payee.id}) not in correspondence identities')
-        payer.ledgers().reload()
-        payee.ledgers().reload()
+        await payer.ledgers().reload()
+        await payee.ledgers().reload()
         payer_ledger: Ledger = [l for l in payer.ledgers if l.id in self.ledger_ids][0]
         payee_ledger: Ledger = [l for l in payee.ledgers if l.id in self.ledger_ids][0]
-        payer_ledger.accounts().reload()
-        payee_ledger.accounts().reload()
+        await payer_ledger.accounts().reload()
+        await payee_ledger.accounts().reload()
         payer_equity_acct: Account = [
             a for a in payer_ledger.accounts if a.type is AccountType.EQUITY
         ][0]
         payee_equity_acct: Account = [
             a for a in payee_ledger.accounts if a.type is AccountType.EQUITY
         ][0]
-        accts = self.get_accounts()
+        accts = await self.get_accounts()
         payer_nostro_acct: Account = [
             a for a in accts
             if a.ledger_id == payer_ledger.id and a.type is AccountType.NOSTRO_ASSET
@@ -166,18 +167,18 @@ class Correspondence(HashedModel):
             [payer_equity_entry, payee_equity_entry, payer_vostro_entry, payee_nostro_entry],
         )
 
-    def balances(self) -> dict[str, int]:
+    async def balances(self) -> dict[str, int]:
         """Returns the balances of the correspondents as a dict mapping
             str Identity ID to signed int (equal to Nostro - Vostro).
         """
-        accts = self.get_accounts()
+        accts = await self.get_accounts()
         balances = {}
         for acct in accts:
-            acct.ledger().reload()
+            await acct.ledger().reload()
             if acct.ledger.identity_id not in balances:
                 balances[acct.ledger.identity_id] = 0
             if acct.type is AccountType.NOSTRO_ASSET:
-                balances[acct.ledger.identity_id] += acct.balance()
+                balances[acct.ledger.identity_id] += await acct.balance()
             if acct.type is AccountType.VOSTRO_LIABILITY:
-                balances[acct.ledger.identity_id] -= acct.balance()
+                balances[acct.ledger.identity_id] -= await acct.balance()
         return balances
