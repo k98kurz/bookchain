@@ -26,6 +26,7 @@ class Transaction(HashedModel):
     # override automatic properties
     @property
     def details(self) -> dict[str, bytes]:
+        """A packify.SerializableType stored in the database as a blob."""
         return packify.unpack(self.data.get('details', b'd\x00\x00\x00\x00'))
     @details.setter
     def details(self, val: dict[str, bytes]):
@@ -37,6 +38,7 @@ class Transaction(HashedModel):
 
     @property
     def auth_scripts(self) -> dict[str, bytes]:
+        """A dict mapping account IDs to tapescript unlocking script bytes."""
         return packify.unpack(self.data.get('auth_scripts', b'd\x00\x00\x00\x00'))
     @auth_scripts.setter
     def auth_scripts(self, val: dict[str, bytes]):
@@ -47,7 +49,7 @@ class Transaction(HashedModel):
         self.data['auth_scripts'] = packify.pack(val)
 
     @classmethod
-    def encode(cls, data: dict|None) -> dict|None:
+    def _encode(cls, data: dict|None) -> dict|None:
         """Encode values for saving."""
         if type(data) is not dict:
             return None
@@ -55,13 +57,6 @@ class Transaction(HashedModel):
             data['auth_scripts'] = packify.pack(data.get('auth_scripts', {}))
         if type(data.get('details', {})) is dict:
             data['details'] = packify.pack(data.get('details', {}))
-        return data
-
-    @classmethod
-    def parse(cls, data: dict) -> dict|None:
-        """Parse encoded values."""
-        if type(data) is not dict:
-            return None
         return data
 
     @classmethod

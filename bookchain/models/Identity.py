@@ -37,35 +37,6 @@ class Identity(HashedModel):
             if k not in self.columns_excluded_from_hash
         }
 
-    def update(self, updates: dict, conditions: dict = None) -> Identity:
-        """Unlike an ordinary HashedModel, there are two columns on an
-            Identity that are not hashed, meaning they can be updated
-            without changing the ID. This is mainly for convenience so
-            that secret values can be saved locally without requiring
-            their dissemination to synchronize Identities within a
-            correspondent system.
-        """
-        # merge data into updates
-        for key in self.data:
-            if key in self.columns and not key in updates:
-                updates[key] = self.data[key]
-
-        for key in updates:
-            vert(key in self.columns, f'unrecognized column: {key}')
-
-        if self.generate_id(updates) != self.id:
-            return super().update(updates)
-
-        # parse conditions
-        conditions = conditions if conditions is not None else {}
-        if self.id_column in self.data and self.id_column not in conditions:
-            conditions[self.id_column] = self.data[self.id_column]
-
-        # run update query
-        self.query().update(updates, conditions)
-
-        return self
-
     def correspondents(self, reload: bool = False) -> list[Identity]:
         """Get the correspondents for this Identity."""
         if reload:

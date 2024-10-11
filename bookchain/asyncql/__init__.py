@@ -38,6 +38,7 @@ Transaction.entries = async_contains(Transaction, Entry, 'entry_ids')
 Transaction.ledgers = async_contains(Transaction, Ledger, 'ledger_ids')
 Ledger.transactions = async_within(Ledger, Transaction, 'ledger_ids')
 
+
 def set_connection_info(db_file_path: str):
     """Set the connection info for all models to use the specified
         sqlite3 database file path.
@@ -53,3 +54,10 @@ def set_connection_info(db_file_path: str):
     Vendor.connection_info = db_file_path
     AsyncDeletedModel.connection_info = db_file_path
     AsyncAttachment.connection_info = db_file_path
+
+
+# no longer needed
+del async_contains
+del async_belongs_to
+del async_within
+del async_has_many

@@ -35,6 +35,7 @@ class Account(AsyncHashedModel):
     # override automatic property
     @property
     def type(self) -> AccountType:
+        """The AccountType of the Account."""
         return AccountType(self.data['type'])
     @type.setter
     def type(self, val: AccountType):
@@ -44,6 +45,7 @@ class Account(AsyncHashedModel):
     # override automatic property
     @property
     def locking_scripts(self) -> dict[EntryType, bytes]:
+        """The dict mapping EntryType to tapescript locking script bytes."""
         return {
             EntryType(k): v
             for k,v in packify.unpack(
@@ -62,6 +64,7 @@ class Account(AsyncHashedModel):
     # override automatic property
     @property
     def details(self) -> packify.SerializableType:
+        """A packify.SerializableType stored in the database as a blob."""
         return packify.unpack(self.data.get('details', None) or b'n\x00\x00\x00\x00')
     @details.setter
     def details(self, val: packify.SerializableType):
@@ -82,39 +85,16 @@ class Account(AsyncHashedModel):
             ])
         return data
 
-    @staticmethod
-    def _parse(data: dict|None) -> dict|None:
-        if type(data) is not dict:
-            return data
-        return data
-
-    @staticmethod
-    def parse(models: Account|list[Account]) -> Account|list[Account]:
-        if type(models) is list:
-            for model in models:
-                model.data = Account._parse(model.data)
-        else:
-            models.data = Account._parse(models.data)
-        return models
-
     @classmethod
     async def insert(cls, data: dict) -> Account | None:
+        """Ensure data is encoded before inserting."""
         result = await super().insert(cls._encode(data))
-        if result is not None:
-            result.data = cls._parse(result.data)
         return result
 
-    @classmethod
-    def query(cls, conditions: dict = None) -> AsyncQueryBuilderProtocol:
-        return super().query(cls._encode(conditions))
-
-    @classmethod
-    async def find(cls, id: str) -> Account | None:
-        """For better type hinting."""
-        return await super().find(id)
-
     async def balance(self, include_sub_accounts: bool = True) -> int:
-        """Tally all entries for this account and all sub-accounts."""
+        """Tally all entries for this account. Includes the balances of
+            all sub-accounts if include_sub_accounts is True.
+        """
         totals = {
             EntryType.CREDIT: 0,
             EntryType.DEBIT: 0,

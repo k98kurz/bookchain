@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class AccountType(Enum):
+    """Enum of valid Account types."""
     DEBIT_BALANCE = 'd'
     ASSET = 'a'
     NOSTRO_ASSET = 'n'
