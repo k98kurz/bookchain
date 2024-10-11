@@ -121,12 +121,12 @@ class TestBasicE2E(unittest.TestCase):
             details='Starting capital asset'
         )
         assert txn.validate()
-        equity_entry.save()
-        asset_entry.save()
         txn.save()
         # reload txn from database and validate it
         txn: models.Transaction = models.Transaction.find(txn.id)
         assert txn.validate(reload=True)
+        assert len(asset_entry.transactions) == 1
+        assert asset_entry.transactions[0].id == txn.id, asset_entry.transactions
 
         # check balances
         assert equity_acct.balance() == 10_000_00, equity_acct.balance()
