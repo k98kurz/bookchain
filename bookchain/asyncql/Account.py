@@ -77,12 +77,6 @@ class Account(AsyncHashedModel):
             return data
         if type(data.get('type', None)) is AccountType:
             data['type'] = data['type'].value
-        if type(data.get('lock_entry_types', None)) is list:
-            if all([type(et) is not EntryType for et in data['lock_entry_types']]):
-                data['lock_entry_types'] = [EntryType(et) for et in data['lock_entry_types']]
-            data['lock_entry_types'] = packify.pack([
-                let.value for let in data['lock_entry_types']
-            ])
         return data
 
     @classmethod
