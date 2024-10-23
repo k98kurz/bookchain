@@ -1,7 +1,7 @@
-from sqloquent import HashedModel
+from sqloquent.asyncql import AsyncHashedModel
 
 
-class Vendor(HashedModel):
+class Vendor(AsyncHashedModel):
     connection_info: str = ''
     table: str = 'vendors'
     id_column: str = 'id'
@@ -10,4 +10,3 @@ class Vendor(HashedModel):
     name: str
     code: str|None
     details: str|None
-
