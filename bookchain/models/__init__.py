@@ -1,8 +1,10 @@
-from .Account import Account, AccountType
+from .Account import Account
+from .AccountType import AccountType
 from .Correspondence import Correspondence
 from .Currency import Currency
 from .Customer import Customer
-from .Entry import Entry, EntryType
+from .Entry import Entry
+from .EntryType import EntryType
 from .Identity import Identity
 from .Ledger import Ledger
 from .Transaction import Transaction
