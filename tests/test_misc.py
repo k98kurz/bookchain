@@ -58,23 +58,23 @@ class TestMisc(unittest.TestCase):
             'name': 'US Dollar',
             'prefix_symbol': '$',
             'fx_symbol': 'USD',
-            'base': 10,
-            'decimals': 2,
+            'base': 100,
+            'unit_divisions': 1,
         })
 
         assert currency.format(123) == '$1.23', currency.format(123)
-        assert currency.get_units_and_change(123) == (1, 23)
+        assert currency.get_units(123) == (1, 23)
 
         currency = models.Currency({
             'name': 'Mean Minute/Hour',
             'prefix_symbol': 'Ħ',
             'fx_symbol': 'MMH',
             'base': 60,
-            'decimals': 2,
+            'unit_divisions': 2,
         })
 
         assert currency.format(60*60*1.23) == 'Ħ1.23', currency.format(60*60*1.23)
-        assert currency.get_units_and_change(60*60*2 + 123) == (2, 123)
+        assert currency.get_units((60**2)*2 + (60**1)*2 + (60**0)*3) == (2, 2, 3)
 
     def test_publish_migrations(self):
         assert len(os.listdir(MIGRATIONS_PATH)) < 2, os.listdir(MIGRATIONS_PATH)

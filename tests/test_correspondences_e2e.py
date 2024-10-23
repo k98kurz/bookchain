@@ -108,7 +108,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
             'prefix_symbol': 'Ħ',
             'fx_symbol': 'MHH',
             'base': 60,
-            'decimals': 2,
+            'unit_divisions': 2,
             'details': 'Abstract value of one median hour of human time. ' +
                 '1 Hour = 60 Minutes = 3600 Seconds',
         })
@@ -431,7 +431,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
             'prefix_symbol': 'Ħ',
             'fx_symbol': 'MHH',
             'base': 60,
-            'decimals': 2,
+            'unit_divisions': 2,
             'details': 'Abstract value of one median hour of human time. ' +
                 '1 Hour = 60 Minutes = 3600 Seconds',
         })

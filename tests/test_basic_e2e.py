@@ -63,7 +63,7 @@ class TestBasicE2E(unittest.TestCase):
             'prefix_symbol': '$',
             'fx_symbol': 'USD',
             'base': 10,
-            'decimals': 2,
+            'unit_divisions': 2,
         })
         ledger = models.Ledger.insert({
             'name': 'General Ledger',
