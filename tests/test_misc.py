@@ -75,6 +75,8 @@ class TestMisc(unittest.TestCase):
 
         assert currency.format(60*60*1.23) == 'Ħ1.23', currency.format(60*60*1.23)
         assert currency.get_units((60**2)*2 + (60**1)*2 + (60**0)*3) == (2, 2, 3)
+        assert currency.format(60*60 + 45, decimal_places=2) == 'Ħ1.01', \
+            currency.format(60*60 + 45, decimal_places=2)
 
     def test_publish_migrations(self):
         assert len(os.listdir(MIGRATIONS_PATH)) < 2, os.listdir(MIGRATIONS_PATH)
