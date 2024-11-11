@@ -22,6 +22,8 @@ Enum of valid Entry types (CREDIT and DEBIT).
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: bytes
 - type: str
@@ -41,6 +43,8 @@ check fails.
 precondition check fails.
 
 #### Methods
+
+##### `__hash__() -> int:`
 
 ##### `@staticmethod parse(models: Entry | list[Entry]) -> Entry | list[Entry]:`
 
@@ -86,6 +90,8 @@ instead return the result of calling the plugin function.
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: bytes | None
 - type: str
@@ -142,6 +148,8 @@ EntryType. Returns True if it does and False if it does not (or if it errors).
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: bytes
 - identity_id: str
@@ -187,6 +195,8 @@ categories: Asset, Liability, Equity.
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: bytes
 - pubkey: bytes | None
@@ -233,6 +243,8 @@ Get the nosto and vostro accounts for a correspondent.
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: str
 - identity_ids: str
@@ -283,12 +295,14 @@ signed int (equal to Nostro - Vostro).
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: str | None
 - prefix_symbol: str | None
 - postfix_symbol: str | None
 - fx_symbol: str | None
-- decimals: <class 'int'>
+- unit_divisions: <class 'int'>
 - base: int | None
 
 #### Methods
@@ -297,13 +311,13 @@ signed int (equal to Nostro - Vostro).
 
 Convert the amount into a Decimal representation.
 
-##### `get_units_and_change(amount: int) -> tuple[int, int]:`
+##### `get_units(amount: int) -> tuple[int]:`
 
 Get the full units and subunits.
 
-##### `format(amount: int, /, *, use_fx_symbol: bool = False, use_postfix: bool = False, use_prefix: bool = True, decimals: int = None) -> str:`
+##### `format(amount: int, /, *, use_fx_symbol: bool = False, use_postfix: bool = False, use_prefix: bool = True, decimal_places: int = 2) -> str:`
 
-Format an amount using the correct number of decimals.
+Format an amount using the correct number of decimal_places.
 
 ### `Customer(AsyncHashedModel)`
 
@@ -317,6 +331,8 @@ Format an amount using the correct number of decimals.
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: str | None
 - code: str | None
@@ -333,6 +349,8 @@ Format an amount using the correct number of decimals.
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: bytes
 - entry_ids: str
@@ -381,7 +399,7 @@ from the database.
 
 Validate the transaction, save the entries, then save the transaction.
 
-### `Vendor(HashedModel)`
+### `Vendor(AsyncHashedModel)`
 
 #### Annotations
 
@@ -390,9 +408,11 @@ Validate the transaction, save the entries, then save the transaction.
 - columns: tuple[str]
 - id: <class 'str'>
 - name: <class 'str'>
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: str | None
 - code: str | None
@@ -411,6 +431,8 @@ Model for preserving and restoring deleted AsyncHashedModel records.
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - model_class: str
 - record_id: str
 - record: bytes
@@ -420,9 +442,12 @@ Model for preserving and restoring deleted AsyncHashedModel records.
 
 ##### `__init__(data: dict = {}) -> None:`
 
-##### `@classmethod async insert(data: dict) -> AsyncSqlModel | None:`
+##### `@classmethod async insert(data: dict, /, *, parallel_events: bool = False, suppress_events: bool = False) -> AsyncSqlModel | None:`
 
-##### `async restore(inject: dict = {}) -> AsyncSqlModel:`
+Insert a new record to the datastore. Return instance. Raises TypeError if data
+is not a dict. Automatically sets a timestamp if one is not supplied.
+
+##### `async restore(inject: dict = {}, /, *, parallel_events: bool = False, suppress_events: bool = False) -> AsyncSqlModel:`
 
 Restore a deleted record, remove from deleted_records, and return the restored
 model. Raises ValueError if model_class cannot be found. Raises TypeError if
@@ -443,6 +468,8 @@ Class for attaching immutable details to a record.
 - query_builder_class: Type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: bytes | None
 - related_model: str
@@ -469,8 +496,6 @@ Decode packed bytes to dict.
 Set the details column using either supplied data or by packifying
 self._details. Return self in monad pattern. Raises packify.UsageError or
 TypeError if details contains unseriazliable type.
-
-##### `@classmethod async insert(data: dict) -> Optional[AsyncAttachment]:`
 
 ## Functions
 
