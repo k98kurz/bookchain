@@ -25,11 +25,16 @@ class Currency(AsyncHashedModel):
         return Decimal(amount) / Decimal(base**self.unit_divisions)
 
     def get_units(self, amount: int) -> tuple[int,]:
-        """Get the full units and subunits."""
+        """Get the full units and subunits. The number of subunit
+            figures will be equal to unit_divisions; e.g. if base=10
+            and unit_divisions=2, get_units(200) will return (2, 0, 0);
+            if base=60 and unit_divisions=2, get_units(200) will return
+            (0, 3, 20).
+        """
         def get_subunits(amount, base, unit_divisions):
-            units_and_change = list(divmod(amount, base ** unit_divisions))
+            units_and_change = divmod(amount, base ** unit_divisions)
             if unit_divisions > 1:
-                units_and_change = [units_and_change[0], *get_subunits(units_and_change[1], base, unit_divisions-1)]
+                units_and_change = (units_and_change[0], *get_subunits(units_and_change[1], base, unit_divisions-1))
             return units_and_change
         base = self.base or 10
         unit_divisions = self.unit_divisions
