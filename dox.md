@@ -517,4 +517,7 @@ Writes migration files for the models.
 
 Executes the sqloquent automigrate tool.
 
+## Values
+
+- `__version__`: str
 
