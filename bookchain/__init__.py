@@ -1,5 +1,6 @@
 from .models import (
     Account,
+    AccountCategory,
     AccountType,
     Correspondence,
     Currency,
@@ -21,6 +22,7 @@ def set_connection_info(db_file_path: str):
         sqlite3 database file path.
     """
     Account.connection_info = db_file_path
+    AccountCategory.connection_info = db_file_path
     Correspondence.connection_info = db_file_path
     Currency.connection_info = db_file_path
     Customer.connection_info = db_file_path
@@ -37,6 +39,7 @@ def publish_migrations(migration_folder_path: str):
     sqloquent.tools.publish_migrations(migration_folder_path)
     models = [
         Account,
+        AccountCategory,
         Correspondence,
         Currency,
         Customer,

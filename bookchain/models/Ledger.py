@@ -1,5 +1,6 @@
 from __future__ import annotations
 from .Account import Account, AccountType
+from .LedgerType import LedgerType
 from sqloquent import HashedModel, RelatedModel, RelatedCollection
 
 
@@ -7,15 +8,25 @@ class Ledger(HashedModel):
     connection_info: str = ''
     table: str = 'ledgers'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'name', 'identity_id', 'currency_id')
+    columns: tuple[str] = ('id', 'name', 'type', 'identity_id', 'currency_id')
     id: str
     name: str
+    type: str
     identity_id: str
     currency_id: str
     owner: RelatedModel
     currency: RelatedModel
     accounts: RelatedCollection
     transactions: RelatedCollection
+
+    @property
+    def type(self) -> LedgerType:
+        """The LedgerType of the Ledger."""
+        return LedgerType(self.data['type'])
+    @type.setter
+    def type(self, val: LedgerType):
+        if isinstance(val, LedgerType):
+            self.data['type'] = val.value
 
     def balances(self, reload: bool = False) -> dict[str, tuple[int, AccountType]]:
         """Return a dict mapping account ids to their balances. Accounts
@@ -30,14 +41,18 @@ class Ledger(HashedModel):
         return balances
 
     @classmethod
-    def find(cls, id: str) -> Ledger:
-        # """For better type hints."""
-        return super().find(id)
-
-    @classmethod
     def insert(cls, data: dict) -> Ledger | None:
         # """For better type hints."""
+        if 'type' in data and isinstance(data['type'], LedgerType):
+            data['type'] = data['type'].value
         return super().insert(data)
+
+    @classmethod
+    def insert_many(cls, items: list[dict], /, *, suppress_events: bool = False) -> int:
+        for item in items:
+            if 'type' in item and isinstance(item['type'], LedgerType):
+                item['type'] = item['type'].value
+        return super().insert_many(items, suppress_events=suppress_events)
 
     def setup_basic_accounts(self) -> list[Account]:
         """Creates and returns a list of 3 unsaved Accounts covering the

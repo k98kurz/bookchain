@@ -19,6 +19,7 @@ class TestBasicE2E(unittest.TestCase):
         models.Currency.connection_info = DB_FILEPATH
         models.Ledger.connection_info = DB_FILEPATH
         models.Account.connection_info = DB_FILEPATH
+        models.AccountCategory.connection_info = DB_FILEPATH
         models.Entry.connection_info = DB_FILEPATH
         models.Transaction.connection_info = DB_FILEPATH
         sqloquent.DeletedModel.connection_info = DB_FILEPATH
@@ -41,7 +42,8 @@ class TestBasicE2E(unittest.TestCase):
         sqloquent.tools.publish_migrations(MIGRATIONS_PATH)
         tomigrate = [
             models.Identity, models.Currency, models.Ledger,
-            models.Account, models.Entry, models.Transaction,
+            models.Account, models.AccountCategory, models.Entry,
+            models.Transaction,
         ]
         for model in tomigrate:
             name = model.__name__
@@ -56,6 +58,25 @@ class TestBasicE2E(unittest.TestCase):
         self.automigrate()
         assert models.Account.query().count() == 0
 
+        # setup account categories
+        equity_acct_cat = models.AccountCategory.insert({
+            'name': 'Equity',
+            'ledger_type': models.LedgerType.PRESENT,
+            'destination': 'Balance Sheet',
+        })
+        assert equity_acct_cat is not None
+        assert models.AccountCategory.find(equity_acct_cat.id) is not None
+        asset_acct_cat = models.AccountCategory.insert({
+            'name': 'Asset',
+            'ledger_type': models.LedgerType.PRESENT,
+            'destination': 'Balance Sheet',
+        })
+        liability_acct_cat = models.AccountCategory.insert({
+            'name': 'Liability',
+            'ledger_type': models.LedgerType.PRESENT,
+            'destination': 'Balance Sheet',
+        })
+
         # setup identity, currency, ledger, and some accounts
         identity = models.Identity.insert({'name': 'Test Man'})
         currency = models.Currency.insert({
@@ -69,22 +90,32 @@ class TestBasicE2E(unittest.TestCase):
             'name': 'General Ledger',
             'identity_id': identity.id,
             'currency_id': currency.id,
+            'type': models.LedgerType.PRESENT,
         })
         equity_acct = models.Account.insert({
             'name': 'General Equity',
             'type': models.AccountType.EQUITY,
             'ledger_id': ledger.id,
+            'category_id': equity_acct_cat.id,
         })
         asset_acct = models.Account.insert({
             'name': 'General Asset',
             'type': models.AccountType.ASSET,
             'ledger_id': ledger.id,
+            'category_id': asset_acct_cat.id,
         })
         liability_acct = models.Account.insert({
             'name': 'General Liability',
             'type': models.AccountType.LIABILITY,
             'ledger_id': ledger.id,
+            'category_id': liability_acct_cat.id,
         })
+
+        assert equity_acct.category.id == equity_acct_cat.id
+        assert asset_acct.category.id == asset_acct_cat.id
+        assert liability_acct.category.id == liability_acct_cat.id
+
+        assert len(liability_acct_cat.accounts) == 1, liability_acct_cat.accounts
 
         # make sub account
         assert len(liability_acct.children) == 0
@@ -93,6 +124,7 @@ class TestBasicE2E(unittest.TestCase):
             'type': models.AccountType.LIABILITY,
             'ledger_id': ledger.id,
             'parent_id': liability_acct.id,
+            'category_id': liability_acct_cat.id,
         })
         assert liability_sub_acct.parent is not None, liability_sub_acct.parent
         assert liability_sub_acct.parent.id == liability_acct.id, liability_sub_acct.parent
