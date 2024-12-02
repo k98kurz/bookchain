@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from sqloquent.interfaces import QueryBuilderProtocol
 from .Account import Account, AccountType
 from .LedgerType import LedgerType
 from sqloquent import HashedModel, RelatedModel, RelatedCollection
@@ -41,18 +43,34 @@ class Ledger(HashedModel):
         return balances
 
     @classmethod
-    def insert(cls, data: dict) -> Ledger | None:
-        # """For better type hints."""
-        if 'type' in data and isinstance(data['type'], LedgerType):
+    def _encode(cls, data: dict) -> dict:
+        """Encode Ledger data without modifying the original dict."""
+        if not isinstance(data, dict):
+            return data
+        data = {**data}
+        if isinstance(data.get('type', None), LedgerType):
             data['type'] = data['type'].value
-        return super().insert(data)
+        return data
+
+    @classmethod
+    def insert(cls, data: dict) -> Ledger | None:
+        """Ensure data is encoded before inserting."""
+        return super().insert(cls._encode(data))
 
     @classmethod
     def insert_many(cls, items: list[dict], /, *, suppress_events: bool = False) -> int:
-        for item in items:
-            if 'type' in item and isinstance(item['type'], LedgerType):
-                item['type'] = item['type'].value
+        """Ensure items are encoded before inserting."""
+        items = [cls._encode(item) for item in items]
         return super().insert_many(items, suppress_events=suppress_events)
+
+    def update(self, updates: dict, /, *, suppress_events: bool = False) -> HashedModel:
+        """Ensure updates are encoded before updating."""
+        return super().update(self._encode(updates), suppress_events=suppress_events)
+
+    @classmethod
+    def query(cls, conditions: dict = None, connection_info: str = None) -> QueryBuilderProtocol:
+        """Ensure conditions are encoded before querying."""
+        return super().query(cls._encode(conditions), connection_info)
 
     def setup_basic_accounts(self) -> list[Account]:
         """Creates and returns a list of 3 unsaved Accounts covering the

@@ -1,4 +1,7 @@
 from __future__ import annotations
+from typing import Any, Coroutine
+
+from sqloquent.asyncql.interfaces import AsyncQueryBuilderProtocol
 from .Account import Account, AccountType
 from .LedgerType import LedgerType
 from sqloquent.asyncql import AsyncHashedModel, AsyncRelatedModel, AsyncRelatedCollection
@@ -21,6 +24,7 @@ class Ledger(AsyncHashedModel):
 
     @property
     def type(self) -> LedgerType:
+        """The LedgerType of the Ledger."""
         return LedgerType(self.data['type'])
     @type.setter
     def type(self, val: LedgerType):
@@ -40,17 +44,34 @@ class Ledger(AsyncHashedModel):
         return balances
 
     @classmethod
-    async def insert(cls, data: dict) -> Ledger | None:
-        if 'type' in data and isinstance(data['type'], LedgerType):
+    def _encode(cls, data: dict) -> dict:
+        """Encode Ledger data without modifying the original dict."""
+        if not isinstance(data, dict):
+            return data
+        data = {**data}
+        if isinstance(data.get('type', None), LedgerType):
             data['type'] = data['type'].value
-        return await super().insert(data)
+        return data
+
+    @classmethod
+    async def insert(cls, data: dict) -> Ledger | None:
+        """Ensure data is encoded before inserting."""
+        return await super().insert(cls._encode(data))
 
     @classmethod
     async def insert_many(cls, items: list[dict], /, *, suppress_events: bool = False) -> int:
-        for item in items:
-            if 'type' in item and isinstance(item['type'], LedgerType):
-                item['type'] = item['type'].value
+        """Ensure items are encoded before inserting."""
+        items = [cls._encode(item) for item in items]
         return await super().insert_many(items, suppress_events=suppress_events)
+
+    async def update(self, updates: dict, /, *, suppress_events: bool = False, parallel_events: bool = False) -> Coroutine[Any, Any, AsyncHashedModel]:
+        """Ensure updates are encoded before updating."""
+        return await super().update(self._encode(updates), suppress_events=suppress_events, parallel_events=parallel_events)
+
+    @classmethod
+    def query(cls, conditions: dict = None, connection_info: str = None) -> AsyncQueryBuilderProtocol:
+        """Ensure conditions are encoded before querying."""
+        return super().query(cls._encode(conditions), connection_info)
 
     def setup_basic_accounts(self) -> list[Account]:
         """Creates and returns a list of 3 unsaved Accounts covering the
