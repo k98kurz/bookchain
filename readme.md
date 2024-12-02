@@ -7,6 +7,11 @@ reject invalid transactions if controls are configured on the involved accounts.
 Included are tools for establishing correspondent credit relations as well as
 accomplishing basic bookkeeping tasks.
 
+This package uses
+[sqloquent](https://pypi.org/project/sqloquent) for database persistence,
+[tapescript](https://pypi.org/project/tapescript) for authorization, and
+[packify](https://pypi.org/project/packify) for deterministic encoding.
+
 ## Status
 
 All initially planned features have been implemented and tested.
