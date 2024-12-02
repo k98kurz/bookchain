@@ -9,13 +9,14 @@ from .models import (
     EntryType,
     Identity,
     Ledger,
+    LedgerType,
     Transaction,
     Vendor,
 )
 from sqloquent import DeletedModel, Attachment
 import sqloquent.tools
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 def set_connection_info(db_file_path: str):
     """Set the connection info for all models to use the specified

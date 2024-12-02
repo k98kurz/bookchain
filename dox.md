@@ -388,12 +388,6 @@ precondition check fails.
 
 #### Methods
 
-##### `balances(reload: bool = False) -> dict[str, tuple[int, AccountType]]:`
-
-Return a dict mapping account ids to their balances. Accounts with sub-accounts
-will not include the sub-account balances; the sub-account balances will be
-returned separately.
-
 ##### `@classmethod insert(data: dict) -> Ledger | None:`
 
 Ensure data is encoded before inserting.
@@ -410,10 +404,21 @@ Ensure updates are encoded before updating.
 
 Ensure conditions are encoded before querying.
 
+##### `balances(reload: bool = False) -> dict[str, tuple[int, AccountType]]:`
+
+Return a dict mapping account ids to their balances. Accounts with sub-accounts
+will not include the sub-account balances; the sub-account balances will be
+returned separately.
+
 ##### `setup_basic_accounts() -> list[Account]:`
 
 Creates and returns a list of 3 unsaved Accounts covering the 3 basic
 categories: Asset, Liability, Equity.
+
+### `LedgerType(Enum)`
+
+Enum of valid ledger types: PRESENT and FUTURE for cash and accrual accounting,
+respectively.
 
 ### `Transaction(HashedModel)`
 

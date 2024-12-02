@@ -238,12 +238,6 @@ precondition check fails.
 
 #### Methods
 
-##### `async balances(reload: bool = False) -> dict[str, tuple[int, AccountType]]:`
-
-Return a dict mapping account ids to their balances. Accounts with sub-accounts
-will not include the sub-account balances; the sub-account balances will be
-returned separately.
-
 ##### `@classmethod async insert(data: dict) -> Ledger | None:`
 
 Ensure data is encoded before inserting.
@@ -259,6 +253,12 @@ Ensure updates are encoded before updating.
 ##### `@classmethod query(conditions: dict = None, connection_info: str = None) -> AsyncQueryBuilderProtocol:`
 
 Ensure conditions are encoded before querying.
+
+##### `async balances(reload: bool = False) -> dict[str, tuple[int, AccountType]]:`
+
+Return a dict mapping account ids to their balances. Accounts with sub-accounts
+will not include the sub-account balances; the sub-account balances will be
+returned separately.
 
 ##### `setup_basic_accounts() -> list[Account]:`
 
