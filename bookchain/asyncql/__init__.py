@@ -1,10 +1,12 @@
 from .Account import Account, AccountType
+from .AccountCategory import AccountCategory
 from .Correspondence import Correspondence
 from .Currency import Currency
 from .Customer import Customer
 from .Entry import Entry, EntryType
 from .Identity import Identity
 from .Ledger import Ledger
+from .LedgerType import LedgerType
 from .Transaction import Transaction
 from .Vendor import Vendor
 from sqloquent.asyncql import (
@@ -29,6 +31,9 @@ Account.ledger = async_belongs_to(Account, Ledger, 'ledger_id')
 Account.children = async_has_many(Account, Account, 'parent_id')
 Account.parent = async_belongs_to(Account, Account, 'parent_id')
 
+Account.category = async_belongs_to(Account, AccountCategory, 'category_id')
+AccountCategory.accounts = async_has_many(AccountCategory, Account, 'category_id')
+
 Account.entries = async_has_many(Account, Entry, 'account_id')
 Entry.account = async_belongs_to(Entry, Account, 'account_id')
 
@@ -44,6 +49,7 @@ def set_connection_info(db_file_path: str):
         sqlite3 database file path.
     """
     Account.connection_info = db_file_path
+    AccountCategory.connection_info = db_file_path
     Correspondence.connection_info = db_file_path
     Currency.connection_info = db_file_path
     Customer.connection_info = db_file_path
