@@ -1,9 +1,9 @@
 from __future__ import annotations
-
-from sqloquent.interfaces import QueryBuilderProtocol
 from .Account import Account, AccountType
 from .LedgerType import LedgerType
-from sqloquent import HashedModel, RelatedModel, RelatedCollection
+from sqloquent import (
+    HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol,
+)
 
 
 class Ledger(HashedModel):
@@ -29,18 +29,6 @@ class Ledger(HashedModel):
     def type(self, val: LedgerType):
         if isinstance(val, LedgerType):
             self.data['type'] = val.value
-
-    def balances(self, reload: bool = False) -> dict[str, tuple[int, AccountType]]:
-        """Return a dict mapping account ids to their balances. Accounts
-            with sub-accounts will not include the sub-account balances;
-            the sub-account balances will be returned separately.
-        """
-        balances = {}
-        if reload:
-            self.accounts().reload()
-        for account in self.accounts:
-            balances[account.id] = (account.balance(False), account.type)
-        return balances
 
     @classmethod
     def _encode(cls, data: dict) -> dict:
@@ -71,6 +59,18 @@ class Ledger(HashedModel):
     def query(cls, conditions: dict = None, connection_info: str = None) -> QueryBuilderProtocol:
         """Ensure conditions are encoded before querying."""
         return super().query(cls._encode(conditions), connection_info)
+
+    def balances(self, reload: bool = False) -> dict[str, tuple[int, AccountType]]:
+        """Return a dict mapping account ids to their balances. Accounts
+            with sub-accounts will not include the sub-account balances;
+            the sub-account balances will be returned separately.
+        """
+        balances = {}
+        if reload:
+            self.accounts().reload()
+        for account in self.accounts:
+            balances[account.id] = (account.balance(False), account.type)
+        return balances
 
     def setup_basic_accounts(self) -> list[Account]:
         """Creates and returns a list of 3 unsaved Accounts covering the

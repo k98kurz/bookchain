@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Any, Coroutine
-
-from sqloquent.asyncql.interfaces import AsyncQueryBuilderProtocol
 from .Account import Account, AccountType
 from .LedgerType import LedgerType
-from sqloquent.asyncql import AsyncHashedModel, AsyncRelatedModel, AsyncRelatedCollection
+from sqloquent.asyncql import (
+    AsyncHashedModel, AsyncRelatedModel, AsyncRelatedCollection,
+    AsyncQueryBuilderProtocol,
+)
 
 
 class Ledger(AsyncHashedModel):
@@ -30,18 +30,6 @@ class Ledger(AsyncHashedModel):
     def type(self, val: LedgerType):
         if isinstance(val, LedgerType):
             self.data['type'] = val.value
-
-    async def balances(self, reload: bool = False) -> dict[str, tuple[int, AccountType]]:
-        """Return a dict mapping account ids to their balances. Accounts
-            with sub-accounts will not include the sub-account balances;
-            the sub-account balances will be returned separately.
-        """
-        balances = {}
-        if reload:
-            await self.accounts().reload()
-        for account in self.accounts:
-            balances[account.id] = (await account.balance(False), account.type)
-        return balances
 
     @classmethod
     def _encode(cls, data: dict) -> dict:
@@ -72,6 +60,18 @@ class Ledger(AsyncHashedModel):
     def query(cls, conditions: dict = None, connection_info: str = None) -> AsyncQueryBuilderProtocol:
         """Ensure conditions are encoded before querying."""
         return super().query(cls._encode(conditions), connection_info)
+
+    async def balances(self, reload: bool = False) -> dict[str, tuple[int, AccountType]]:
+        """Return a dict mapping account ids to their balances. Accounts
+            with sub-accounts will not include the sub-account balances;
+            the sub-account balances will be returned separately.
+        """
+        balances = {}
+        if reload:
+            await self.accounts().reload()
+        for account in self.accounts:
+            balances[account.id] = (await account.balance(False), account.type)
+        return balances
 
     def setup_basic_accounts(self) -> list[Account]:
         """Creates and returns a list of 3 unsaved Accounts covering the
