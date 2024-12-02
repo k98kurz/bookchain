@@ -63,7 +63,7 @@ class Ledger(HashedModel):
         items = [cls._encode(item) for item in items]
         return super().insert_many(items, suppress_events=suppress_events)
 
-    def update(self, updates: dict, /, *, suppress_events: bool = False) -> HashedModel:
+    def update(self, updates: dict, /, *, suppress_events: bool = False) -> Ledger:
         """Ensure updates are encoded before updating."""
         return super().update(self._encode(updates), suppress_events=suppress_events)
 

@@ -99,9 +99,10 @@ instead return the result of calling the plugin function.
 - parent_id: str
 - code: str | None
 - locking_scripts: bytes | None
-- category: str | None
+- category_id: str | None
 - ledger: AsyncRelatedModel
 - parent: AsyncRelatedModel
+- category: AsyncRelatedModel
 - children: AsyncRelatedCollection
 - entries: AsyncRelatedCollection
 
@@ -117,6 +118,8 @@ fails.
 check fails.
 - parent: The related Account. Setting raises TypeError if the precondition
 check fails.
+- category: The related AccountCategory. Setting raises TypeError if the
+precondition check fails.
 - entries: The related Entrys. Setting raises TypeError if the precondition
 check fails.
 
@@ -125,6 +128,18 @@ check fails.
 ##### `@classmethod async insert(data: dict) -> Account | None:`
 
 Ensure data is encoded before inserting.
+
+##### `@classmethod async insert_many(items: list[dict], /, *, suppress_events: bool = False) -> int:`
+
+Ensure items are encoded before inserting.
+
+##### `async update(updates: dict, /, *, suppress_events: bool = False) -> Account:`
+
+Ensure updates are encoded before updating.
+
+##### `@classmethod query(conditions: dict = None, connection_info: str = None) -> AsyncQueryBuilderProtocol:`
+
+Ensure conditions are encoded before querying.
 
 ##### `async balance(include_sub_accounts: bool = True) -> int:`
 
@@ -135,6 +150,55 @@ include_sub_accounts is True.
 
 Checks if the auth_script validates against the correct locking_script for the
 EntryType. Returns True if it does and False if it does not (or if it errors).
+
+### `LedgerType(Enum)`
+
+Enum of valid ledger types: PRESENT and FUTURE for cash and accrual accounting,
+respectively.
+
+### `AccountCategory(AsyncHashedModel)`
+
+#### Annotations
+
+- table: str
+- id_column: str
+- columns: tuple[str]
+- id: str
+- name: str
+- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- connection_info: str
+- data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
+- columns_excluded_from_hash: tuple[str]
+- details: bytes
+- ledger_type: str | None
+- destination: str
+- accounts: AsyncRelatedCollection
+
+#### Properties
+
+- ledger_type: The LedgerType that this AccountCategory applies to, if any.
+- accounts: The related Accounts. Setting raises TypeError if the precondition
+check fails.
+
+#### Methods
+
+##### `@classmethod async insert(data: dict, /, *, suppress_events: bool = False) -> AccountCategory | None:`
+
+Ensure data is encoded before inserting.
+
+##### `@classmethod async insert_many(items: list[dict], /, *, suppress_events: bool = False) -> int:`
+
+Ensure items are encoded before inserting.
+
+##### `async update(updates: dict, /, *, suppress_events: bool = False) -> AccountCategory:`
+
+Ensure updates are encoded before updating.
+
+##### `@classmethod query(conditions: dict = None, connection_info: str = None) -> AsyncQueryBuilderProtocol:`
+
+Ensure conditions are encoded before querying.
 
 ### `Ledger(AsyncHashedModel)`
 
@@ -152,6 +216,7 @@ EntryType. Returns True if it does and False if it does not (or if it errors).
 - _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
 - details: bytes
+- type: str
 - identity_id: str
 - currency_id: str
 - owner: AsyncRelatedModel
@@ -161,6 +226,7 @@ EntryType. Returns True if it does and False if it does not (or if it errors).
 
 #### Properties
 
+- type: The LedgerType of the Ledger.
 - owner: The related Identity. Setting raises TypeError if the precondition
 check fails.
 - currency: The related Currency. Setting raises TypeError if the precondition
@@ -177,6 +243,22 @@ precondition check fails.
 Return a dict mapping account ids to their balances. Accounts with sub-accounts
 will not include the sub-account balances; the sub-account balances will be
 returned separately.
+
+##### `@classmethod async insert(data: dict) -> Ledger | None:`
+
+Ensure data is encoded before inserting.
+
+##### `@classmethod async insert_many(items: list[dict], /, *, suppress_events: bool = False) -> int:`
+
+Ensure items are encoded before inserting.
+
+##### `async update(updates: dict, /, *, parallel_events: bool = False, suppress_events: bool = False) -> Ledger:`
+
+Ensure updates are encoded before updating.
+
+##### `@classmethod query(conditions: dict = None, connection_info: str = None) -> AsyncQueryBuilderProtocol:`
+
+Ensure conditions are encoded before querying.
 
 ##### `setup_basic_accounts() -> list[Account]:`
 

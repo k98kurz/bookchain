@@ -64,7 +64,7 @@ class Ledger(AsyncHashedModel):
         items = [cls._encode(item) for item in items]
         return await super().insert_many(items, suppress_events=suppress_events)
 
-    async def update(self, updates: dict, /, *, suppress_events: bool = False, parallel_events: bool = False) -> Coroutine[Any, Any, AsyncHashedModel]:
+    async def update(self, updates: dict, /, *, suppress_events: bool = False, parallel_events: bool = False) -> Ledger:
         """Ensure updates are encoded before updating."""
         return await super().update(self._encode(updates), suppress_events=suppress_events, parallel_events=parallel_events)
 
