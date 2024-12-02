@@ -13,13 +13,14 @@ class AccountCategory(HashedModel):
     columns: tuple[str] = ('id', 'name', 'ledger_type', 'destination')
     id: str
     name: str
-    ledger_type: str
+    ledger_type: str|None
     destination: str
     accounts: RelatedCollection
 
     @property
-    def ledger_type(self) -> LedgerType:
-        return LedgerType(self.data['ledger_type'])
+    def ledger_type(self) -> LedgerType|None:
+        """The LedgerType that this AccountCategory applies to, if any."""
+        return LedgerType(self.data['ledger_type']) if self.data['ledger_type'] else None
     @ledger_type.setter
     def ledger_type(self, value: LedgerType) -> None:
         if not isinstance(value, LedgerType):
