@@ -14,9 +14,6 @@ from .Vendor import Vendor
 from sqloquent import contains, within, has_many, belongs_to
 
 
-__version__ = '0.2.0'
-
-
 Identity.ledgers = has_many(Identity, Ledger, 'identity_id')
 Ledger.owner = belongs_to(Ledger, Identity, 'identity_id')
 
