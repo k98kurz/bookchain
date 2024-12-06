@@ -24,6 +24,7 @@
 - code: str | None
 - locking_scripts: bytes | None
 - category_id: str | None
+- active: bool | Default[True]
 - ledger: RelatedModel
 - parent: RelatedModel
 - category: RelatedModel
@@ -587,9 +588,16 @@ TypeError if details contains unseriazliable type.
 Set the connection info for all models to use the specified sqlite3 database
 file path.
 
-### `publish_migrations(migration_folder_path: str):`
+### `get_migrations() -> dict[str, str]:`
 
-Writes migration files for the models.
+Returns a dict mapping model names to migration file content strs.
+
+### `publish_migrations(migration_folder_path: str, migration_callback: Callable = None):`
+
+Writes migration files for the models. If a migration callback is provided, it
+will be used to modify the migration file contents. The migration callback will
+be called with the model name and the migration file contents, and whatever it
+returns will be used as the migration file contents.
 
 ### `automigrate(migration_folder_path: str, db_file_path: str):`
 
@@ -598,4 +606,3 @@ Executes the sqloquent automigrate tool.
 ## Values
 
 - `__version__`: str
-

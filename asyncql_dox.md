@@ -100,6 +100,7 @@ instead return the result of calling the plugin function.
 - code: str | None
 - locking_scripts: bytes | None
 - category_id: str | None
+- active: bool | Default[True]
 - ledger: AsyncRelatedModel
 - parent: AsyncRelatedModel
 - category: AsyncRelatedModel
@@ -588,5 +589,4 @@ TypeError if details contains unseriazliable type.
 
 Set the connection info for all models to use the specified sqlite3 database
 file path.
-
 
