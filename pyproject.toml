@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bookchain"
-version = "0.2.2"
+version = "0.2.3"
 authors = [
   { name="k98kurz", email="k98kurz@gmail.com" },
 ]
@@ -21,7 +21,7 @@ classifiers = [
   "Topic :: Office/Business :: Financial :: Accounting",
 ]
 dependencies = [
-  "sqloquent >= 0.5.3",
+  "sqloquent >= 0.6.2",
   "tapescript >= 0.6.1",
 ]
 
@@ -31,7 +31,7 @@ dependencies = [
 
 [project.optional-dependencies]
 asyncql = [
-  "sqloquent[asyncql] >= 0.5.3",
+  "sqloquent[asyncql] >= 0.6.2",
 ]
 docs = [
   "autodox >= 0.1.16"

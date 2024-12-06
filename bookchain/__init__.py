@@ -14,9 +14,11 @@ from .models import (
     Vendor,
 )
 from sqloquent import DeletedModel, Attachment
+from typing import Callable
 import sqloquent.tools
 
-__version__ = '0.2.2'
+
+__version__ = '0.2.3'
 
 def set_connection_info(db_file_path: str):
     """Set the connection info for all models to use the specified
@@ -35,13 +37,12 @@ def set_connection_info(db_file_path: str):
     DeletedModel.connection_info = db_file_path
     Attachment.connection_info = db_file_path
 
-def publish_migrations(migration_folder_path: str):
-    """Writes migration files for the models."""
-    sqloquent.tools.publish_migrations(migration_folder_path)
+
+def get_migrations() -> dict[str, str]:
+    """Returns a dict mapping model names to migration file content strs."""
     models = [
         Account,
         AccountCategory,
-        Correspondence,
         Currency,
         Customer,
         Entry,
@@ -49,12 +50,27 @@ def publish_migrations(migration_folder_path: str):
         Ledger,
         Transaction,
         Vendor,
-        DeletedModel,
-        Attachment,
     ]
+    migrations = {}
     for model in models:
-        name = model.__name__
-        m = sqloquent.tools.make_migration_from_model(model)
+        migrations[model.__name__] = sqloquent.tools.make_migration_from_model(model)
+    return migrations
+
+def publish_migrations(
+        migration_folder_path: str,
+        migration_callback: Callable[[str, str], str] = None
+    ):
+    """Writes migration files for the models. If a migration callback is
+        provided, it will be used to modify the migration file contents.
+        The migration callback will be called with the model name and
+        the migration file contents, and whatever it returns will be
+        used as the migration file contents.
+    """
+    sqloquent.tools.publish_migrations(migration_folder_path)
+    migrations = get_migrations()
+    for name, m in migrations.items():
+        m2 = migration_callback(name, m) if migration_callback else m
+        m = m2 if type(m2) is str and len(m2) > 0 else m
         with open(f'{migration_folder_path}/create_{name}.py', 'w') as f:
             f.write(m)
 
