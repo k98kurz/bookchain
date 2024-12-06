@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqloquent.asyncql import (
     AsyncHashedModel, AsyncRelatedModel, AsyncRelatedCollection,
-    AsyncQueryBuilderProtocol,
+    AsyncQueryBuilderProtocol, Default
 )
 from tapescript import run_auth_script, Script
 from .AccountType import AccountType
@@ -16,8 +16,9 @@ class Account(AsyncHashedModel):
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'name', 'type', 'ledger_id', 'parent_id', 'code',
-        'locking_scripts', 'category_id', 'details'
+        'locking_scripts', 'category_id', 'details', 'active'
     )
+    columns_excluded_from_hash = ('active',)
     id: str
     name: str
     type: str
@@ -27,6 +28,7 @@ class Account(AsyncHashedModel):
     locking_scripts: bytes|None
     category_id: str|None
     details: bytes|None
+    active: bool|Default[True]
     ledger: AsyncRelatedModel
     parent: AsyncRelatedModel
     category: AsyncRelatedModel

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from sqloquent import HashedModel, RelatedModel, RelatedCollection
+from sqloquent import HashedModel, RelatedModel, RelatedCollection, Default
 from sqloquent.interfaces import QueryBuilderProtocol
 from tapescript import run_auth_script, Script
 from .AccountType import AccountType
@@ -14,8 +14,9 @@ class Account(HashedModel):
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'name', 'type', 'ledger_id', 'parent_id', 'code',
-        'locking_scripts', 'category_id', 'details'
+        'locking_scripts', 'category_id', 'details', 'active'
     )
+    columns_excluded_from_hash = ('active',)
     id: str
     name: str
     type: str
@@ -25,6 +26,7 @@ class Account(HashedModel):
     locking_scripts: bytes|None
     category_id: str|None
     details: bytes|None
+    active: bool|Default[True]
     ledger: RelatedModel
     parent: RelatedModel
     category: RelatedModel
