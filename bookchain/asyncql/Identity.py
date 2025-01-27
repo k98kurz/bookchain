@@ -20,16 +20,6 @@ class Identity(AsyncHashedModel):
     ledgers: AsyncRelatedCollection
     correspondences: AsyncRelatedCollection
 
-    @classmethod
-    def generate_id(cls, data: dict) -> str:
-        """Generate an ID that does not commit to the columns that
-            should be excluded from the cryptographic commitment.
-        """
-        return super().generate_id({
-            k:v for k,v in data.items()
-            if k not in cls.columns_excluded_from_hash
-        })
-
     def public(self) -> dict:
         """Return the public data for cloning the Identity."""
         return {

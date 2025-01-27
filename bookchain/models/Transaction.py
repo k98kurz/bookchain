@@ -14,6 +14,7 @@ class Transaction(HashedModel):
     table: str = 'transactions'
     id_column: str = 'id'
     columns: tuple[str] = ('id', 'entry_ids', 'ledger_ids', 'timestamp', 'details', 'auth_scripts')
+    columns_excluded_from_hash: tuple[str] = ('auth_scripts',)
     id: str
     entry_ids: str
     ledger_ids: str
@@ -58,21 +59,6 @@ class Transaction(HashedModel):
         if type(data.get('details', {})) is dict:
             data['details'] = packify.pack(data.get('details', {}))
         return data
-
-    @classmethod
-    def generate_id(cls, data: dict) -> str:
-        """Generate a txn id by hashing the entry_ids, ledger_ids,
-            details, and timestamp. Raises TypeError for unencodable
-            type (calls packify.pack).
-        """
-        data = {
-            'entry_ids': sorted(data.get('entry_ids', [])),
-            'ledger_ids': sorted(data.get('ledger_ids', [])),
-            'details': data.get('details', {}),
-            'timestamp': data.get('timestamp', None),
-        }
-        preimage = packify.pack(data)
-        return sha256(preimage).digest().hex()
 
     @classmethod
     def prepare(cls, entries: list[Entry], timestamp: str, auth_scripts: dict = {},
