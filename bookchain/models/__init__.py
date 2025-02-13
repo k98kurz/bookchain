@@ -1,6 +1,8 @@
 from .Account import Account
 from .AccountCategory import AccountCategory
 from .AccountType import AccountType
+from .ArchivedEntry import ArchivedEntry
+from .ArchivedTransaction import ArchivedTransaction
 from .Correspondence import Correspondence
 from .Currency import Currency
 from .Customer import Customer
@@ -10,6 +12,7 @@ from .Identity import Identity
 from .Ledger import Ledger
 from .LedgerType import LedgerType
 from .Transaction import Transaction
+from .TxRollup import TxRollup
 from .Vendor import Vendor
 from sqloquent import contains, within, has_many, belongs_to
 
@@ -41,3 +44,21 @@ Transaction.entries = contains(Transaction, Entry, 'entry_ids')
 
 Transaction.ledgers = contains(Transaction, Ledger, 'ledger_ids')
 Ledger.transactions = within(Ledger, Transaction, 'ledger_ids')
+
+TxRollup.transactions = contains(TxRollup, Transaction, 'tx_ids')
+Transaction.rollups = within(Transaction, TxRollup, 'tx_ids')
+
+TxRollup.ledger = belongs_to(TxRollup, Ledger, 'ledger_id')
+Ledger.rollups = within(Ledger, TxRollup, 'ledger_id')
+
+TxRollup.parent = belongs_to(TxRollup, TxRollup, 'parent_id')
+TxRollup.children = has_many(TxRollup, TxRollup, 'parent_id')
+
+TxRollup.correspondence = belongs_to(TxRollup, Correspondence, 'correspondence_id')
+Correspondence.rollups = within(Correspondence, TxRollup, 'correspondence_id')
+
+ArchivedEntry.transactions = within(ArchivedEntry, ArchivedTransaction, 'entry_ids')
+ArchivedTransaction.entries = contains(ArchivedTransaction, ArchivedEntry, 'entry_ids')
+
+ArchivedEntry.account = belongs_to(ArchivedEntry, Account, 'account_id')
+ArchivedTransaction.ledgers = contains(ArchivedTransaction, Ledger, 'ledger_ids')
