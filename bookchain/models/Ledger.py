@@ -20,6 +20,7 @@ class Ledger(HashedModel):
     currency: RelatedModel
     accounts: RelatedCollection
     transactions: RelatedCollection
+    rollups: RelatedCollection
 
     @property
     def type(self) -> LedgerType:

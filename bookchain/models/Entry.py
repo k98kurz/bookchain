@@ -1,5 +1,6 @@
 from __future__ import annotations
 from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
+from .ArchivedEntry import ArchivedEntry
 from .EntryType import EntryType
 from typing import Callable
 import packify
@@ -74,7 +75,7 @@ class Entry(HashedModel):
     @classmethod
     def insert_many(cls, items: list[dict]) -> int:
         """Ensure data is encoded before inserting."""
-        items = [Entry._encode(data) for data in list]
+        items = [cls._encode(data) for data in list]
         return super().insert_many(items)
 
     @classmethod
@@ -100,3 +101,13 @@ class Entry(HashedModel):
         if hasattr(self, '_plugin') and callable(self._plugin):
             return self._plugin(self, *args, **kwargs)
         return {'sigfield1': bytes.fromhex(self.generate_id(self.data))}
+
+    def archive(self) -> ArchivedEntry:
+        """Archive the Entry. If it has already been archived,
+            return the existing ArchivedEntry.
+        """
+        archived_entry_id = ArchivedEntry.generate_id({**self.data})
+        try:
+            return ArchivedEntry.insert({**self.data})
+        except Exception as e:
+            return ArchivedEntry.find(archived_entry_id)
