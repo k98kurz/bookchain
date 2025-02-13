@@ -4,37 +4,83 @@ from .Entry import Entry, EntryType
 from .Identity import Identity
 from .Ledger import Ledger
 from sqloquent import HashedModel, RelatedCollection
-from sqloquent.errors import vert
+from sqloquent.errors import tert, vert
+import packify
 
 
 class Correspondence(HashedModel):
     table: str = 'correspondences'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'identity_ids', 'ledger_ids', 'details')
+    columns: tuple[str] = ('id', 'identity_ids', 'ledger_ids', 'details', 'signatures')
+    columns_excluded_from_hash: tuple[str] = ('signatures')
     id: str
     identity_ids: str
     ledger_ids: str
-    details: str
+    details: bytes
+    signatures: bytes|None
     identities: RelatedCollection
     ledgers: RelatedCollection
+    rollups: RelatedCollection
 
-    def get_accounts(self) -> list[Account]:
-        """Loads the relevant nostro and vostro Accounts for the
-            Identities that are part of the Correspondence.
+    @property
+    def details(self) -> dict:
+        return packify.unpack(self.data.get('details', b'd\x00\x00\x00\x00'))
+    @details.setter
+    def details(self, val: dict):
+        """Sets the details of the correspondence as a dict. Raises
+            TypeError if the value is not a dict.
         """
-        accounts = {}
+        tert(type(val) is dict, 'details must be type dict')
+        self.data['details'] = packify.pack(val)
+
+    @property
+    def signatures(self) -> dict[str, bytes]:
+        """Returns the signatures of the correspondences as a dict
+            mapping Identity ID to bytes signature.
+        """
+        return packify.unpack(self.data.get('signatures', b'd\x00\x00\x00\x00'))
+    @signatures.setter
+    def signatures(self, val: dict[str, bytes]):
+        """Sets the signatures of the correspondences as a dict
+            mapping IDs to bytes signature. Raises TypeError for invalid
+            type or ValueError if an ID is not of the correspondence or
+            its identities.
+        """
+        tert(type(val) is dict, 'signatures must be type dict[str, bytes]')
+        for k, v in val.items():
+            tert(type(k) is str, 'signatures must be type dict[str, bytes]')
+            tert(type(v) is bytes, 'signatures must be type dict[str, bytes]')
+            vert(k in self.identity_ids or k == self.id,
+                 f'ID {k} not of correspondence or one of its identities')
+        self.data['signatures'] = packify.pack(val)
+
+    def get_accounts(self) -> dict[str, dict[AccountType, Account]]:
+        """Loads the relevant nostro and vostro Accounts for the
+            Identities that are part of the Correspondence, as well as
+            the equity Accounts for each Identity, returning a dict of
+            the form { identity.id: { AccountType: Account }}.
+        """
         self.ledgers().reload()
         self.identities().reload()
-        id1: Identity = self.identities[0]
-        for identity in self.identities:
-            if identity is id1:
-                continue
-            identity: Identity
-            for acct in id1.get_correspondent_accounts(identity):
+        accounts = {
+            identity.id: {}
+            for identity in self.identities
+        }
+        for id1 in self.identities:
+            id1: Identity
+            for identity in [i for i in self.identities if i.id != id1.id]:
+                identity: Identity
+                for acct in id1.get_correspondent_accounts(identity):
+                    acct.ledger().reload()
+                    if acct.ledger.identity_id == identity.id:
+                        accounts[identity.id][acct.type] = acct
+        for ledger in self.ledgers:
+            ledger: Ledger
+            acct = ledger.accounts().query().equal(type=AccountType.EQUITY.value).first()
+            if acct is not None:
                 acct.ledger().reload()
-                accounts[acct.id] = acct
-        acct_ids = set([aid for aid in accounts])
-        return [accounts[i] for i in acct_ids]
+                accounts[acct.ledger.identity_id][acct.type] = acct
+        return accounts
 
     def setup_accounts(self, locking_scripts: dict[str, bytes]) -> dict[str, dict[AccountType, Account]]:
         """Takes a dict mapping Identity ID to tapescript locking
@@ -100,22 +146,10 @@ class Correspondence(HashedModel):
             a for a in payee_ledger.accounts if a.type is AccountType.EQUITY
         ][0]
         accts = self.get_accounts()
-        payer_nostro_acct: Account = [
-            a for a in accts
-            if a.ledger_id == payer_ledger.id and a.type is AccountType.NOSTRO_ASSET
-        ][0]
-        payer_vostro_acct: Account = [
-            a for a in accts
-            if a.ledger_id == payer_ledger.id and a.type is AccountType.VOSTRO_LIABILITY
-        ][0]
-        payee_nostro_acct: Account = [
-            a for a in accts
-            if a.ledger_id == payee_ledger.id and a.type is AccountType.NOSTRO_ASSET
-        ][0]
-        payee_vostro_acct: Account = [
-            a for a in accts
-            if a.ledger_id == payee_ledger.id and a.type is AccountType.VOSTRO_LIABILITY
-        ][0]
+        payer_nostro_acct = accts[payer.id][AccountType.NOSTRO_ASSET]
+        payer_vostro_acct = accts[payer.id][AccountType.VOSTRO_LIABILITY]
+        payee_nostro_acct = accts[payee.id][AccountType.NOSTRO_ASSET]
+        payee_vostro_acct = accts[payee.id][AccountType.VOSTRO_LIABILITY]
 
         payer_equity_entry = Entry({
             'nonce': txn_nonce,
@@ -171,6 +205,7 @@ class Correspondence(HashedModel):
             str Identity ID to signed int (equal to Nostro - Vostro).
         """
         accts = self.get_accounts()
+        accts = [a for accts in accts.values() for a in accts.values()]
         balances = {}
         for acct in accts:
             acct.ledger().reload()
