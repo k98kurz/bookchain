@@ -1,8 +1,8 @@
 from __future__ import annotations
-from hashlib import sha256
 from sqloquent import HashedModel, RelatedCollection
 from sqloquent.errors import vert, tert
 from .Account import Account, AccountType
+from .ArchivedTransaction import ArchivedTransaction
 from .Correspondence import Correspondence
 from .Entry import Entry, EntryType
 from .Identity import Identity
@@ -23,6 +23,7 @@ class Transaction(HashedModel):
     auth_scripts: bytes
     entries: RelatedCollection
     ledgers: RelatedCollection
+    rollups: RelatedCollection
 
     # override automatic properties
     @property
@@ -174,11 +175,11 @@ class Transaction(HashedModel):
                     if cor is None:
                         continue
                     accts = cor.get_accounts()
-                    accts = [a for a in accts if a.ledger.identity_id == acct.details]
-                    accts = [a for a in accts if a.type is AccountType.VOSTRO_LIABILITY]
-                    if len(accts) < 1:
+                    if acct.details not in accts:
                         return False
-                    vostro = accts[0]
+                    if AccountType.VOSTRO_LIABILITY not in accts[acct.details]:
+                        return False
+                    vostro = accts[acct.details][AccountType.VOSTRO_LIABILITY]
                     if vostro.id not in [a.id for a in accounts]:
                         # each nostro Entry must have an offsetting vostro Entry
                         return False
@@ -199,11 +200,11 @@ class Transaction(HashedModel):
                     if cor is None:
                         continue
                     accts = cor.get_accounts()
-                    accts = [a for a in accts if a.ledger.identity_id == acct.details]
-                    accts = [a for a in accts if a.type is AccountType.NOSTRO_ASSET]
-                    if len(accts) < 1:
+                    if acct.details not in accts:
                         return False
-                    nostro = accts[0]
+                    if AccountType.NOSTRO_ASSET not in accts[acct.details]:
+                        return False
+                    nostro = accts[acct.details][AccountType.NOSTRO_ASSET]
                     if nostro.id not in [a.id for a in accounts]:
                         # each nostro Entry must have an offsetting nostro Entry
                         return False
@@ -223,3 +224,13 @@ class Transaction(HashedModel):
         for e in self.entries:
             e.save()
         return super().save()
+
+    def archive(self) -> ArchivedTransaction:
+        """Archive the Transaction. If it has already been archived,
+            return the existing ArchivedTransaction.
+        `"""
+        archived_txn_id = ArchivedTransaction.generate_id({**self.data})
+        try:
+            return ArchivedTransaction.insert({**self.data})
+        except Exception as e:
+            return ArchivedTransaction.find(archived_txn_id)
