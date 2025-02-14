@@ -108,15 +108,24 @@ class Account(AsyncHashedModel):
             conditions['type'] = conditions['type'].value
         return super().query(conditions, connection_info)
 
-    async def balance(self, include_sub_accounts: bool = True) -> int:
+    async def balance(self, include_sub_accounts: bool = True,
+                      rolled_up_balances: dict[str, tuple[EntryType, int]] = {}) -> int:
         """Tally all entries for this account. Includes the balances of
-            all sub-accounts if include_sub_accounts is True.
+            all sub-accounts if include_sub_accounts is True. To get an
+            accurate balance, pass in the balances from the most recent
+            TxRollup.
         """
         totals = {
             EntryType.CREDIT: 0,
             EntryType.DEBIT: 0,
             'subaccounts': 0,
         }
+        if self.id in rolled_up_balances:
+            if rolled_up_balances[self.id][0] == EntryType.CREDIT:
+                totals[EntryType.CREDIT] = rolled_up_balances[self.id][1]
+            else:
+                totals[EntryType.DEBIT] = rolled_up_balances[self.id][1]
+
         async for entries in self.entries().query().chunk(500):
             entry: Entry
             for entry in entries:
@@ -125,7 +134,10 @@ class Account(AsyncHashedModel):
         if include_sub_accounts:
             for acct in self.children:
                 acct: Account
-                totals['subaccounts'] += await acct.balance(include_sub_accounts=True)
+                totals['subaccounts'] += await acct.balance(
+                    include_sub_accounts=True,
+                    rolled_up_balances=rolled_up_balances
+                )
 
         if self.type in (
             AccountType.ASSET, AccountType.DEBIT_BALANCE,
