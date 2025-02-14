@@ -583,8 +583,21 @@ class TestCorrespondencesE2E(unittest.TestCase):
                     alice.id: self.locking_script_alice,
                     bob.id: self.locking_script_bob,
                 },
+                'txru_lock': self.multisig_lock,
             })
         })
+        alice_sig = tapescript.make_single_sig_witness(
+            alice.seed, {'sigfield1': bytes.fromhex(correspondence.id)}
+        )
+        bob_sig = tapescript.make_single_sig_witness(
+            bob.seed, {'sigfield1': bytes.fromhex(correspondence.id)}
+        )
+        correspondence.signatures = {
+            alice.id: alice_sig.bytes,
+            bob.id: bob_sig.bytes,
+            correspondence.id: (alice_sig + bob_sig).bytes,
+        }
+        correspondence.save()
         assert alice.correspondences().query().count() == 1
         assert len(alice.correspondents(reload=True)) == 1
         assert alice.correspondents()[0].id == bob.id
