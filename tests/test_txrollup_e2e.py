@@ -368,6 +368,21 @@ class TestTxRollupE2E(unittest.TestCase):
         assert txrollup.ledger.id == ledger.id
         assert txrollup2.ledger.id == ledger.id
 
+        # make some more txns
+        txn5 = self.create_txn(asset_acct, equity_acct, 100)
+        txn6 = self.create_txn(asset_acct, equity_acct, 200)
+
+        # try to add a second child txrollup to the same parent
+        with self.assertRaises(ValueError) as e:
+            models.TxRollup.prepare([txn5, txn6], txrollup.id)
+        assert str(e.exception) == 'parent already has a child'
+        # fake it
+        txrollup3 = models.TxRollup.prepare([txn5, txn6], txrollup2.id)
+        txrollup3.parent_id = txrollup.id
+        txrollup3.height = txrollup.height + 1
+        txrollup3.balances = models.TxRollup.calculate_balances([txn5, txn6], txrollup.balances)
+        assert not txrollup3.validate()
+
     def test_with_correspondence_e2e(self):
         self.setup_currency()
         alice, bob = self.setup_identities()

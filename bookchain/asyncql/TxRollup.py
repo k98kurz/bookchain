@@ -18,6 +18,22 @@ import tapescript
 
 
 class TxRollup(AsyncHashedModel):
+    """This class represents a transaction rollup, which is a collection
+        of transactions that have consolidated: the IDs of the committed
+        transactions are the leaves of a Merkle tree, and the aggregate
+        effects of the transactions are maintained in a dict mapping
+        account IDs to tuples of EntryType and int balances. A TxRollup
+        created for a Correspondence must have a valid auth_script that
+        unlocks the txru_lock in the Correspondence's details (or an
+        n-of-n multisig made from the pubkeys of the Correspondence's
+        identities if no txru_lock was saved). The height of a TxRollup
+        is the number of TxRollups in its chain -- they form a
+        blockchain of TxRollups, hence the inclusion of a parent_id.
+        Only one child TxRollup can be added for a given parent TxRollup,
+        and the balances of the child TxRollup are the sum of the
+        effects of the transactions in the child TxRollup and the
+        parent TxRollup balances.
+    """
     connection_info: str = ''
     table: str = 'txn_rollups'
     id_column: str = 'id'
@@ -137,7 +153,8 @@ class TxRollup(AsyncHashedModel):
             ledger if no correspondence is provided. Raises TypeError if
             txns is not a list of Transaction objects. Raises ValueError
             if any txns are not for accounts of the given correspondence
-            or of the same ledger if no correspondence is provided.
+            or of the same ledger if no correspondence is provided, or
+            if the parent TxRollup already has a child.
         """
         tert(all([type(t) is Transaction for t in txns]),
             'txns must be a list of Transaction objects')
@@ -183,6 +200,7 @@ class TxRollup(AsyncHashedModel):
             vert(parent is not None, 'parent must exist')
             balances = parent.balances
             txru.height = parent.height + 1
+            vert((await parent.children().query().count()) == 0, 'parent already has a child')
 
         # aggregate balances from txn entries
         balances = await cls.calculate_balances(txns, balances, reload=reload)
@@ -211,6 +229,11 @@ class TxRollup(AsyncHashedModel):
             parent: TxRollup|None = await TxRollup.find(self.parent_id)
             vert(parent is not None, 'parent must exist')
             balances = parent.balances
+            await parent.children().reload()
+            self_id = self.id or self.generate_id(self.data)
+            if len(parent.children) != 0:
+                if parent.children[0].id != self_id:
+                    return False
 
         if self.correspondence_id is not None:
             correspondence: Correspondence = await Correspondence.find(self.correspondence_id)
