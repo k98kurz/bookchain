@@ -100,8 +100,38 @@ class TxRollup(HashedModel):
         return self.tree.verify(bytes.fromhex(self.tx_root), txn_id, proof)
 
     @classmethod
+    def calculate_balances(
+        cls, txns: list[Transaction],
+        parent_balances: dict[str, tuple[EntryType, int]]|None = None,
+        reload: bool = False
+    ) -> dict[str, tuple[EntryType, int]]:
+        """Calculates the account balances for a list of rolled-up
+            transactions. If parent_balances is provided, those are the
+            starting balances to which the balances of the rolled-up
+            transactions are added. If reload is True, the entries are
+            reloaded from the database.
+        """
+        balances = parent_balances or {}
+        for txn in txns:
+            if reload:
+                txn.entries().reload()
+            for e in txn.entries:
+                e: Entry
+                bal = {EntryType.CREDIT: 0, EntryType.DEBIT: 0}
+                if e.account_id in balances:
+                    bal[balances[e.account_id][0]] = balances[e.account_id][1]
+                bal[e.type] += e.amount
+                net_credit = bal[EntryType.CREDIT] - bal[EntryType.DEBIT]
+                if net_credit >= 0:
+                    balances[e.account_id] = (EntryType.CREDIT, net_credit)
+                else:
+                    balances[e.account_id] = (EntryType.DEBIT, -net_credit)
+        return balances
+
+    @classmethod
     def prepare(cls, txns: list[Transaction], parent_id: str|None = None,
-                correspondence: Correspondence|None = None) -> TxRollup:
+                correspondence: Correspondence|None = None, reload: bool = False
+                ) -> TxRollup:
         """Prepare a tx rollup by checking that all txns are for the
             accounts of the given correspondence or belong to the same
             ledger if no correspondence is provided. Raises TypeError if
@@ -155,18 +185,7 @@ class TxRollup(HashedModel):
             txru.height = parent.height + 1
 
         # aggregate balances from txn entries
-        for txn in txns:
-            for e in txn.entries:
-                e: Entry
-                bal = {EntryType.CREDIT: 0, EntryType.DEBIT: 0}
-                if e.account_id in balances:
-                    bal[balances[e.account_id][0]] = balances[e.account_id][1]
-                bal[e.type] += e.amount
-                net_credit = bal[EntryType.CREDIT] - bal[EntryType.DEBIT]
-                if net_credit >= 0:
-                    balances[e.account_id] = (EntryType.CREDIT, net_credit)
-                else:
-                    balances[e.account_id] = (EntryType.DEBIT, -net_credit)
+        balances = cls.calculate_balances(txns, balances, reload=reload)
 
         txru.parent_id = parent_id
         txru.balances = balances
@@ -178,12 +197,20 @@ class TxRollup(HashedModel):
             txru.ledger_id = ledger.id
         return txru
 
-    def validate(self) -> bool:
+    def validate(self, reload: bool = False) -> bool:
         """Validates that a TxRollup has been authorized properly; that
             the balances are correct; and that the height is 1 + the
             height of the parent tx rollup (if one exists).
         """
-        valid = True
+        authorized = True
+        balances = {}
+        parent = None
+
+        # if there is a parent, get its balances if it is a tx rollup
+        if self.parent_id is not None:
+            parent: TxRollup|None = TxRollup.find(self.parent_id)
+            vert(parent is not None, 'parent must exist')
+            balances = parent.balances
 
         if self.correspondence_id is not None:
             correspondence: Correspondence = Correspondence.find(self.correspondence_id)
@@ -196,26 +223,37 @@ class TxRollup(HashedModel):
                 # if not all identities have a pubkey and the txru_lock
                 # is not set, then the txru is authorized by default
                 if not all([len(pk) > 0 for pk in pubkeys]):
-                    return True
-                txru_lock = tapescript.make_multisig_lock(pubkeys, len(pubkeys)).bytes
+                    authorized = True
+                else:
+                    txru_lock = tapescript.make_multisig_lock(pubkeys, len(pubkeys)).bytes
 
-            if self.auth_script is not None:
-                valid = tapescript.run_auth_script(
+            if self.auth_script is not None and txru_lock is not None:
+                authorized = tapescript.run_auth_script(
                     self.auth_script + txru_lock,
                     {'sigfield1': self.id}
                 )
 
-        if self.parent_id is None:
+        # validate the height
+        if parent is None:
             if self.height != 0:
-                valid = False
+                return False
         else:
-            parent: TxRollup|None = TxRollup.find(self.parent_id)
-            if parent is None:
-                valid = False
-            elif parent.height + 1 != self.height:
-                valid = False
+            if parent.height + 1 != self.height:
+                return False
 
-        return valid
+        # recalculate the balances
+        balances = self.calculate_balances(self.transactions, balances, reload=reload)
+
+        # compare the recalculated balances to the stored balances
+        for acct_id, (entry_type, amount) in balances.items():
+            if acct_id not in self.balances:
+                return False
+            if self.balances[acct_id][0] != entry_type:
+                return False
+            if self.balances[acct_id][1] != amount:
+                return False
+
+        return authorized
 
     def trim(self, archive: bool = True) -> int:
         """Trims the transactions and entries committed to in this tx
