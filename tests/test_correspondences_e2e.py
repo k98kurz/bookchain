@@ -154,10 +154,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
             models.EntryType.DEBIT: self.locking_script_alice,
             models.EntryType.CREDIT: self.locking_script_alice,
         }
-        liability_acct_alice.save()
-        equity_acct_alice.ledger().reload()
-        asset_acct_alice.ledger().reload()
-        liability_acct_alice.ledger().reload()
+
         # fund the Identity with starting capital
         nonce = os.urandom(16)
         equity_entry = models.Entry({
@@ -218,9 +215,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
             models.EntryType.CREDIT: self.locking_script_bob,
         }
         liability_acct_bob.save()
-        equity_acct_bob.ledger().reload()
-        asset_acct_bob.ledger().reload()
-        liability_acct_bob.ledger().reload()
+
         # fund the Identity with starting capital
         nonce = os.urandom(16)
         equity_entry = models.Entry({
@@ -492,9 +487,6 @@ class TestCorrespondencesE2E(unittest.TestCase):
             models.EntryType.CREDIT: self.locking_script_alice,
         }
         liability_acct_alice.save()
-        equity_acct_alice.ledger().reload()
-        asset_acct_alice.ledger().reload()
-        liability_acct_alice.ledger().reload()
 
         # fund the Identity with starting capital
         nonce = os.urandom(16)
@@ -542,9 +534,6 @@ class TestCorrespondencesE2E(unittest.TestCase):
             models.EntryType.CREDIT: self.locking_script_bob,
         }
         liability_acct_bob.save()
-        equity_acct_bob.ledger().reload()
-        asset_acct_bob.ledger().reload()
-        liability_acct_bob.ledger().reload()
 
         # fund the Identity with starting capital
         nonce = os.urandom(16)
@@ -612,10 +601,8 @@ class TestCorrespondencesE2E(unittest.TestCase):
         })
         for _, acct in cor_accts[alice.id].items():
             acct.save()
-            acct.ledger().reload()
         for _, acct in cor_accts[bob.id].items():
             acct.save()
-            acct.ledger().reload()
         nostro_acct_alice = cor_accts[alice.id][models.AccountType.NOSTRO_ASSET]
         vostro_acct_alice = cor_accts[alice.id][models.AccountType.VOSTRO_LIABILITY]
         nostro_acct_bob = cor_accts[bob.id][models.AccountType.NOSTRO_ASSET]
