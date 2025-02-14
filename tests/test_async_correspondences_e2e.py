@@ -100,6 +100,9 @@ class TestCorrespondencesE2E(unittest.TestCase):
             self.seed_bob, self.delegate_pkey, self.delegate_cert_bob['begin_ts'],
             self.delegate_cert_bob['end_ts']
         )
+        self.multisig_lock = tapescript.tools.make_multisig_lock(
+            [self.pkey_alice, self.pkey_bob], 2
+        ).bytes
 
     def test_e2e(self):
         assert run(asyncql.Account.query().count()) == 0
@@ -153,10 +156,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
             asyncql.EntryType.DEBIT: self.locking_script_alice,
             asyncql.EntryType.CREDIT: self.locking_script_alice,
         }
-        run(liability_acct_alice.save())
-        run(equity_acct_alice.ledger().reload())
-        run(asset_acct_alice.ledger().reload())
-        run(liability_acct_alice.ledger().reload())
+
         # fund the Identity with starting capital
         nonce = os.urandom(16)
         equity_entry = asyncql.Entry({
@@ -217,9 +217,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
             asyncql.EntryType.CREDIT: self.locking_script_bob,
         }
         run(liability_acct_bob.save())
-        run(equity_acct_bob.ledger().reload())
-        run(asset_acct_bob.ledger().reload())
-        run(liability_acct_bob.ledger().reload())
+
         # fund the Identity with starting capital
         nonce = os.urandom(16)
         equity_entry = asyncql.Entry({
@@ -244,7 +242,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
         # set up Correspondence
         assert run(alice.correspondences().query().count()) == 0
         assert len(run(alice.correspondents(reload=True))) == 0
-        run(asyncql.Correspondence.insert({
+        correspondence: asyncql.Correspondence = run(asyncql.Correspondence.insert({
             'identity_ids': ','.join(sorted([alice.id, bob.id])),
             'ledger_ids': ','.join(sorted([ledger_alice.id, ledger_bob.id])),
             'details': pack({
@@ -257,8 +255,21 @@ class TestCorrespondencesE2E(unittest.TestCase):
                     alice.id: self.locking_script_alice,
                     bob.id: self.locking_script_bob,
                 },
+                'txru_lock': self.multisig_lock,
             })
         }))
+        alice_sig = tapescript.make_single_sig_witness(
+            alice.seed, {'sigfield1': bytes.fromhex(correspondence.id)}
+        )
+        bob_sig = tapescript.make_single_sig_witness(
+            bob.seed, {'sigfield1': bytes.fromhex(correspondence.id)}
+        )
+        correspondence.signatures = {
+            alice.id: alice_sig.bytes,
+            bob.id: bob_sig.bytes,
+            correspondence.id: (alice_sig + bob_sig).bytes,
+        }
+        run(correspondence.save())
         assert run(alice.correspondences().query().count()) == 1
         assert len(run(alice.correspondents(reload=True))) == 1
         assert run(alice.correspondents())[0].id == bob.id
@@ -320,6 +331,17 @@ class TestCorrespondencesE2E(unittest.TestCase):
         run(vostro_bob.save())
         cor_accts2 = run(bob.get_correspondent_accounts(alice))
         assert len(cor_accts2) == 4, cor_accts2
+
+        # get correspondence accounts
+        cor_accts = run(correspondence.get_accounts())
+        assert alice.id in cor_accts
+        assert bob.id in cor_accts
+        assert asyncql.AccountType.NOSTRO_ASSET in cor_accts[alice.id]
+        assert asyncql.AccountType.VOSTRO_LIABILITY in cor_accts[alice.id]
+        assert asyncql.AccountType.EQUITY in cor_accts[alice.id]
+        assert asyncql.AccountType.NOSTRO_ASSET in cor_accts[bob.id]
+        assert asyncql.AccountType.VOSTRO_LIABILITY in cor_accts[bob.id]
+        assert asyncql.AccountType.EQUITY in cor_accts[bob.id]
 
         # create a valid payment transaction: Alice pays Bob 200
         nonce = os.urandom(16)
@@ -467,9 +489,6 @@ class TestCorrespondencesE2E(unittest.TestCase):
             asyncql.EntryType.CREDIT: self.locking_script_alice,
         }
         run(liability_acct_alice.save())
-        run(equity_acct_alice.ledger().reload())
-        run(asset_acct_alice.ledger().reload())
-        run(liability_acct_alice.ledger().reload())
 
         # fund the Identity with starting capital
         nonce = os.urandom(16)
@@ -517,9 +536,6 @@ class TestCorrespondencesE2E(unittest.TestCase):
             asyncql.EntryType.CREDIT: self.locking_script_bob,
         }
         run(liability_acct_bob.save())
-        run(equity_acct_bob.ledger().reload())
-        run(asset_acct_bob.ledger().reload())
-        run(liability_acct_bob.ledger().reload())
 
         # fund the Identity with starting capital
         nonce = os.urandom(16)
@@ -558,8 +574,21 @@ class TestCorrespondencesE2E(unittest.TestCase):
                     alice.id: self.locking_script_alice,
                     bob.id: self.locking_script_bob,
                 },
+                'txru_lock': self.multisig_lock,
             })
         }))
+        alice_sig = tapescript.make_single_sig_witness(
+            alice.seed, {'sigfield1': bytes.fromhex(correspondence.id)}
+        )
+        bob_sig = tapescript.make_single_sig_witness(
+            bob.seed, {'sigfield1': bytes.fromhex(correspondence.id)}
+        )
+        correspondence.signatures = {
+            alice.id: alice_sig.bytes,
+            bob.id: bob_sig.bytes,
+            correspondence.id: (alice_sig + bob_sig).bytes,
+        }
+        run(correspondence.save())
         assert run(alice.correspondences().query().count()) == 1
         assert len(run(alice.correspondents(reload=True))) == 1
         assert run(alice.correspondents())[0].id == bob.id
@@ -574,10 +603,8 @@ class TestCorrespondencesE2E(unittest.TestCase):
         }))
         for _, acct in cor_accts[alice.id].items():
             run(acct.save())
-            run(acct.ledger().reload())
         for _, acct in cor_accts[bob.id].items():
             run(acct.save())
-            run(acct.ledger().reload())
         nostro_acct_alice = cor_accts[alice.id][asyncql.AccountType.NOSTRO_ASSET]
         vostro_acct_alice = cor_accts[alice.id][asyncql.AccountType.VOSTRO_LIABILITY]
         nostro_acct_bob = cor_accts[bob.id][asyncql.AccountType.NOSTRO_ASSET]
