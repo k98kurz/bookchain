@@ -131,6 +131,7 @@ class Account(HashedModel):
 
         if include_sub_accounts:
             for acct in self.children:
+                acct: Account
                 totals['subaccounts'] += acct.balance(
                     include_sub_accounts=True,
                     rolled_up_balances=rolled_up_balances

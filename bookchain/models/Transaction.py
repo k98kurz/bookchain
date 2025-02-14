@@ -13,7 +13,9 @@ class Transaction(HashedModel):
     connection_info: str = ''
     table: str = 'transactions'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'entry_ids', 'ledger_ids', 'timestamp', 'details', 'auth_scripts')
+    columns: tuple[str] = (
+        'id', 'entry_ids', 'ledger_ids', 'timestamp', 'details', 'auth_scripts'
+    )
     columns_excluded_from_hash: tuple[str] = ('auth_scripts',)
     id: str
     entry_ids: str
@@ -228,7 +230,7 @@ class Transaction(HashedModel):
     def archive(self) -> ArchivedTransaction:
         """Archive the Transaction. If it has already been archived,
             return the existing ArchivedTransaction.
-        `"""
+        """
         archived_txn_id = ArchivedTransaction.generate_id({**self.data})
         try:
             return ArchivedTransaction.insert({**self.data})
