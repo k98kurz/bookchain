@@ -151,9 +151,8 @@ class TestTxRollupE2E(unittest.TestCase):
             models.EntryType.CREDIT: self.locking_script_alice,
         }
         liability_acct_alice.save()
-        equity_acct_alice.ledger().reload()
-        asset_acct_alice.ledger().reload()
-        liability_acct_alice.ledger().reload() # fund the Identity with starting capital
+
+        # fund the Identity with starting capital
         nonce = os.urandom(16)
         equity_entry = models.Entry({
             'type': models.EntryType.CREDIT,
@@ -199,9 +198,6 @@ class TestTxRollupE2E(unittest.TestCase):
             models.EntryType.CREDIT: self.locking_script_bob,
         }
         liability_acct_bob.save()
-        equity_acct_bob.ledger().reload()
-        asset_acct_bob.ledger().reload()
-        liability_acct_bob.ledger().reload()
 
         # fund the Identity with starting capital
         nonce = os.urandom(16)
@@ -264,10 +260,8 @@ class TestTxRollupE2E(unittest.TestCase):
         })
         for _, acct in cor_accts[alice.id].items():
             acct.save()
-            acct.ledger().reload()
         for _, acct in cor_accts[bob.id].items():
             acct.save()
-            acct.ledger().reload()
 
         return correspondence
 
@@ -295,7 +289,6 @@ class TestTxRollupE2E(unittest.TestCase):
         self.setup_currency()
         alice, _ = self.setup_identities()
         ledger: models.Ledger = alice.ledgers[0]
-        ledger.accounts().reload()
 
         asset_acct: models.Account = [acct for acct in ledger.accounts if acct.type == models.AccountType.ASSET][0]
         equity_acct: models.Account = [acct for acct in ledger.accounts if acct.type == models.AccountType.EQUITY][0]
@@ -368,14 +361,11 @@ class TestTxRollupE2E(unittest.TestCase):
             f'{equity_acct.balance(rolled_up_balances=txrollup2.balances)} != {equity_starting_balance} + 330'
 
         # check relations
-        ledger.rollups().reload()
         assert len(ledger.rollups) == 2
         assert txrollup.id in [r.id for r in ledger.rollups]
         assert txrollup2.id in [r.id for r in ledger.rollups]
 
-        txrollup.ledger().reload()
         assert txrollup.ledger.id == ledger.id
-        txrollup2.ledger().reload()
         assert txrollup2.ledger.id == ledger.id
 
     def test_with_correspondence_e2e(self):
@@ -477,11 +467,10 @@ class TestTxRollupE2E(unittest.TestCase):
         assert balances[bob.id] == 100, balances[bob.id]
 
         # check relations
-        correspondence.rollups().reload()
         assert len(correspondence.rollups) == 1
         assert txrollup.id in [r.id for r in correspondence.rollups]
-        txrollup.correspondence().reload()
         assert txrollup.correspondence.id == correspondence.id
+
 
 if __name__ == '__main__':
     unittest.main()
