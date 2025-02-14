@@ -1,13 +1,15 @@
 from .Account import Account, AccountType
 from .AccountCategory import AccountCategory
+from .ArchivedEntry import ArchivedEntry
+from .ArchivedTransaction import ArchivedTransaction
 from .Correspondence import Correspondence
 from .Currency import Currency
 from .Customer import Customer
 from .Entry import Entry, EntryType
 from .Identity import Identity
-from .Ledger import Ledger
-from .LedgerType import LedgerType
+from .Ledger import Ledger, LedgerType
 from .Transaction import Transaction
+from .TxRollup import TxRollup
 from .Vendor import Vendor
 from sqloquent.asyncql import (
     AsyncDeletedModel, AsyncAttachment,
@@ -43,6 +45,24 @@ Transaction.entries = async_contains(Transaction, Entry, 'entry_ids')
 Transaction.ledgers = async_contains(Transaction, Ledger, 'ledger_ids')
 Ledger.transactions = async_within(Ledger, Transaction, 'ledger_ids')
 
+TxRollup.transactions = async_contains(TxRollup, Transaction, 'tx_ids')
+Transaction.rollups = async_within(Transaction, TxRollup, 'tx_ids')
+
+TxRollup.ledger = async_belongs_to(TxRollup, Ledger, 'ledger_id')
+Ledger.rollups = async_within(Ledger, TxRollup, 'ledger_id')
+
+TxRollup.parent = async_belongs_to(TxRollup, TxRollup, 'parent_id')
+TxRollup.children = async_has_many(TxRollup, TxRollup, 'parent_id')
+
+TxRollup.correspondence = async_belongs_to(TxRollup, Correspondence, 'correspondence_id')
+Correspondence.rollups = async_within(Correspondence, TxRollup, 'correspondence_id')
+
+ArchivedEntry.transactions = async_within(ArchivedEntry, ArchivedTransaction, 'entry_ids')
+ArchivedTransaction.entries = async_contains(ArchivedTransaction, ArchivedEntry, 'entry_ids')
+
+ArchivedEntry.account = async_belongs_to(ArchivedEntry, Account, 'account_id')
+ArchivedTransaction.ledgers = async_contains(ArchivedTransaction, Ledger, 'ledger_ids')
+
 
 def set_connection_info(db_file_path: str):
     """Set the connection info for all models to use the specified
@@ -50,6 +70,8 @@ def set_connection_info(db_file_path: str):
     """
     Account.connection_info = db_file_path
     AccountCategory.connection_info = db_file_path
+    ArchivedEntry.connection_info = db_file_path
+    ArchivedTransaction.connection_info = db_file_path
     Correspondence.connection_info = db_file_path
     Currency.connection_info = db_file_path
     Customer.connection_info = db_file_path
@@ -57,6 +79,7 @@ def set_connection_info(db_file_path: str):
     Identity.connection_info = db_file_path
     Ledger.connection_info = db_file_path
     Transaction.connection_info = db_file_path
+    TxRollup.connection_info = db_file_path
     Vendor.connection_info = db_file_path
     AsyncDeletedModel.connection_info = db_file_path
     AsyncAttachment.connection_info = db_file_path
