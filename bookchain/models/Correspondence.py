@@ -76,13 +76,17 @@ class Correspondence(HashedModel):
                         accounts[identity.id][acct.type] = acct
         for ledger in self.ledgers:
             ledger: Ledger
-            acct = ledger.accounts().query().equal(type=AccountType.EQUITY.value).first()
+            acct = ledger.accounts().query().equal(
+                type=AccountType.EQUITY.value
+            ).first()
             if acct is not None:
                 acct.ledger().reload()
                 accounts[acct.ledger.identity_id][acct.type] = acct
         return accounts
 
-    def setup_accounts(self, locking_scripts: dict[str, bytes]) -> dict[str, dict[AccountType, Account]]:
+    def setup_accounts(
+            self, locking_scripts: dict[str, bytes]
+        ) -> dict[str, dict[AccountType, Account]]:
         """Takes a dict mapping Identity ID to tapescript locking
             scripts. Returns a dict of Accounts necessary for setting up
             the credit Correspondence of form
@@ -122,8 +126,9 @@ class Correspondence(HashedModel):
                 }
         return accounts
 
-    def pay_correspondent(self, payer: Identity, payee: Identity, amount: int,
-                          txn_nonce: bytes) -> tuple[list[Entry], list[Entry]]:
+    def pay_correspondent(
+            self, payer: Identity, payee: Identity, amount: int, txn_nonce: bytes
+        ) -> tuple[list[Entry], list[Entry]]:
         """Prepares two lists of entries in which the payer remits to
             the payee the given amount: one in which the nostro account
             on the payer's ledger is credited and one in which the
@@ -200,7 +205,9 @@ class Correspondence(HashedModel):
             [payer_equity_entry, payee_equity_entry, payer_vostro_entry, payee_nostro_entry],
         )
 
-    def balances(self, rolled_up_balances: dict[str, tuple[EntryType, int]] = {}) -> dict[str, int]:
+    def balances(
+            self, rolled_up_balances: dict[str, tuple[EntryType, int]] = {}
+        ) -> dict[str, int]:
         """Returns the balances of the correspondents as a dict mapping
             str Identity ID to signed int (equal to Nostro - Vostro).
         """
@@ -212,7 +219,11 @@ class Correspondence(HashedModel):
             if acct.ledger.identity_id not in balances:
                 balances[acct.ledger.identity_id] = 0
             if acct.type is AccountType.NOSTRO_ASSET:
-                balances[acct.ledger.identity_id] += acct.balance(rolled_up_balances=rolled_up_balances)
+                balances[acct.ledger.identity_id] += acct.balance(
+                    rolled_up_balances=rolled_up_balances
+                )
             if acct.type is AccountType.VOSTRO_LIABILITY:
-                balances[acct.ledger.identity_id] -= acct.balance(rolled_up_balances=rolled_up_balances)
+                balances[acct.ledger.identity_id] -= acct.balance(
+                    rolled_up_balances=rolled_up_balances
+                )
         return balances
