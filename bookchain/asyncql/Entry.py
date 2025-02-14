@@ -2,6 +2,7 @@ from __future__ import annotations
 from sqloquent.asyncql import (
     AsyncHashedModel, AsyncRelatedModel, AsyncRelatedCollection, AsyncQueryBuilderProtocol
 )
+from .ArchivedEntry import ArchivedEntry
 from .EntryType import EntryType
 from typing import Callable
 import packify
@@ -54,21 +55,6 @@ class Entry(AsyncHashedModel):
             data['details'] = packify.pack(data.get('details', None))
         return data
 
-    @staticmethod
-    def _parse(data: dict|None) -> dict|None:
-        if type(data) is dict and type(data['amount']) is str:
-            data['amount'] = int(data['amount'])
-        return data
-
-    @staticmethod
-    def parse(models: Entry|list[Entry]) -> Entry|list[Entry]:
-        if type(models) is list:
-            for model in models:
-                model.data = Entry._parse(model.data)
-        else:
-            models.data = Entry._parse(models.data)
-        return models
-
     @classmethod
     def generate_id(cls, data: dict) -> str:
         """Generate an id by hashing the non-id contents. Raises
@@ -85,7 +71,7 @@ class Entry(AsyncHashedModel):
     @classmethod
     async def insert_many(cls, items: list[dict]) -> int:
         """Ensure data is encoded before inserting."""
-        items = [Entry._encode(data) for data in list]
+        items = [cls._encode(data) for data in list]
         return await super().insert_many(items)
 
     @classmethod
@@ -110,4 +96,14 @@ class Entry(AsyncHashedModel):
         """
         if hasattr(self, '_plugin') and callable(self._plugin):
             return self._plugin(self, *args, **kwargs)
-        return {'sigfield1': bytes.fromhex(self.generate_id(self.data))}
+        return {'sigfield1': bytes.fromhex(self.generate_id({**self.data}))}
+
+    async def archive(self) -> ArchivedEntry|None:
+        """Archive the Entry. If it has already been archived,
+            return the existing ArchivedEntry.
+        """
+        archived_entry_id = ArchivedEntry.generate_id({**self.data})
+        try:
+            return await ArchivedEntry.insert({**self.data})
+        except Exception as e:
+            return await ArchivedEntry.find(archived_entry_id)

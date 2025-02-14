@@ -21,6 +21,7 @@ class Ledger(AsyncHashedModel):
     currency: AsyncRelatedModel
     accounts: AsyncRelatedCollection
     transactions: AsyncRelatedCollection
+    rollups: AsyncRelatedCollection
 
     @property
     def type(self) -> LedgerType:
