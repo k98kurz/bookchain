@@ -3,7 +3,7 @@ from sqloquent import HashedModel, RelatedCollection
 from sqloquent.errors import vert, tert
 from .Account import Account, AccountType
 from .Correspondence import Correspondence
-from .Entry import Entry, EntryType
+from .ArchivedEntry import ArchivedEntry, EntryType
 from .Identity import Identity
 import packify
 
@@ -59,48 +59,6 @@ class ArchivedTransaction(HashedModel):
             data['details'] = packify.pack(data.get('details', {}))
         return data
 
-    @classmethod
-    def prepare(cls, entries: list[Entry], timestamp: str, auth_scripts: dict = {},
-                details: packify.SerializableType = None,
-                tapescript_runtime: dict = {}, reload: bool = False) -> ArchivedTransaction:
-        """Prepare a transaction. Raises TypeError for invalid arguments.
-            Raises ValueError if the entries do not balance for each
-            ledger; if a required auth script is missing; or if any of
-            the entries is contained within an existing Transaction.
-            Entries and Transaction will have IDs generated but will not
-            be persisted to the database and must be saved separately.
-            The auth_scripts dict must map account IDs to tapescript
-            bytecode bytes.
-        """
-        tert(type(entries) is list and all([type(e) is Entry for e in entries]),
-            'entries must be list[Entry]')
-        tert(type(timestamp) is str, 'timestamp must be str')
-
-        ledgers = set()
-        for entry in entries:
-            entry.id = entry.generate_id(entry.data)
-            if reload:
-                entry.account().reload()
-            vert(ArchivedTransaction.query().contains('entry_ids', entry.id).count() == 0,
-                 f"entry {entry.id} is already contained within a Transaction")
-            ledgers.add(entry.account.ledger_id)
-
-        txn = cls({
-            'entry_ids': ",".join(sorted([
-                e.id if e.id else e.generate_id(e.data)
-                for e in entries
-            ])),
-            'ledger_ids': ",".join(sorted(list(ledgers))),
-            'timestamp': timestamp,
-        })
-        txn.auth_scripts = auth_scripts
-        txn.details = details
-        txn.entries = entries
-        assert txn.validate(tapescript_runtime, reload), \
-            'transaction validation failed'
-        txn.id = txn.generate_id(txn.data)
-        return txn
-
     def validate(self, tapescript_runtime: dict = {}, reload: bool = False) -> bool:
         """Determines if a Transaction is valid using the rules of accounting
             and checking all auth scripts against their locking scripts. The
@@ -119,7 +77,7 @@ class ArchivedTransaction(HashedModel):
 
         # first check that all ledgers balance
         ledgers = {}
-        entry: Entry
+        entry: ArchivedEntry
         for entry in self.entries:
             vert(entry.account_id in self.auth_scripts or not entry.account.locking_scripts
                  or entry.type not in entry.account.locking_scripts,
