@@ -53,12 +53,6 @@ class Entry(HashedModel):
             data['details'] = packify.pack(data.get('details', None))
         return data
 
-    @staticmethod
-    def _parse(data: dict|None) -> dict|None:
-        if type(data) is dict and type(data['amount']) is str:
-            data['amount'] = int(data['amount'])
-        return data
-
     @classmethod
     def generate_id(cls, data: dict) -> str:
         """Generate an id by hashing the non-id contents. Raises
@@ -102,7 +96,7 @@ class Entry(HashedModel):
             return self._plugin(self, *args, **kwargs)
         return {'sigfield1': bytes.fromhex(self.generate_id(self.data))}
 
-    def archive(self) -> ArchivedEntry:
+    def archive(self) -> ArchivedEntry|None:
         """Archive the Entry. If it has already been archived,
             return the existing ArchivedEntry.
         """

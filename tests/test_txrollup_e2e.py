@@ -469,6 +469,12 @@ class TestTxRollupE2E(unittest.TestCase):
         assert vostro_acct_alice.balance() == 0
         assert vostro_acct_alice.balance(rolled_up_balances=txrollup.balances) == 100, \
             vostro_acct_alice.balance(rolled_up_balances=txrollup.balances)
+        balances = correspondence.balances()
+        assert balances[alice.id] == 0, balances[alice.id]
+        assert balances[bob.id] == 0, balances[bob.id]
+        balances = correspondence.balances(rolled_up_balances=txrollup.balances)
+        assert balances[alice.id] == -100, balances[alice.id]
+        assert balances[bob.id] == 100, balances[bob.id]
 
         # check relations
         correspondence.rollups().reload()
