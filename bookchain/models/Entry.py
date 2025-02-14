@@ -94,7 +94,7 @@ class Entry(HashedModel):
         """
         if hasattr(self, '_plugin') and callable(self._plugin):
             return self._plugin(self, *args, **kwargs)
-        return {'sigfield1': bytes.fromhex(self.generate_id(self.data))}
+        return {'sigfield1': bytes.fromhex(self.generate_id({**self.data}))}
 
     def archive(self) -> ArchivedEntry|None:
         """Archive the Entry. If it has already been archived,

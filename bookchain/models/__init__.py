@@ -1,16 +1,13 @@
-from .Account import Account
+from .Account import Account, AccountType
 from .AccountCategory import AccountCategory
-from .AccountType import AccountType
 from .ArchivedEntry import ArchivedEntry
 from .ArchivedTransaction import ArchivedTransaction
 from .Correspondence import Correspondence
 from .Currency import Currency
 from .Customer import Customer
-from .Entry import Entry
-from .EntryType import EntryType
+from .Entry import Entry, EntryType
 from .Identity import Identity
-from .Ledger import Ledger
-from .LedgerType import LedgerType
+from .Ledger import Ledger, LedgerType
 from .Transaction import Transaction
 from .TxRollup import TxRollup
 from .Vendor import Vendor
