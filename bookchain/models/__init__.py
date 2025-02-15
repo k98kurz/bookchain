@@ -58,4 +58,7 @@ ArchivedEntry.transactions = within(ArchivedEntry, ArchivedTransaction, 'entry_i
 ArchivedTransaction.entries = contains(ArchivedTransaction, ArchivedEntry, 'entry_ids')
 
 ArchivedEntry.account = belongs_to(ArchivedEntry, Account, 'account_id')
+Account.archived_entries = has_many(Account, ArchivedEntry, 'account_id')
+
 ArchivedTransaction.ledgers = contains(ArchivedTransaction, Ledger, 'ledger_ids')
+Ledger.archived_transactions = within(Ledger, ArchivedTransaction, 'ledger_ids')

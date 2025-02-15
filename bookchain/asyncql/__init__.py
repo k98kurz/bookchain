@@ -61,7 +61,10 @@ ArchivedEntry.transactions = async_within(ArchivedEntry, ArchivedTransaction, 'e
 ArchivedTransaction.entries = async_contains(ArchivedTransaction, ArchivedEntry, 'entry_ids')
 
 ArchivedEntry.account = async_belongs_to(ArchivedEntry, Account, 'account_id')
+Account.archived_entries = async_has_many(Account, ArchivedEntry, 'account_id')
+
 ArchivedTransaction.ledgers = async_contains(ArchivedTransaction, Ledger, 'ledger_ids')
+Ledger.archived_transactions = async_within(Ledger, ArchivedTransaction, 'ledger_ids')
 
 
 def set_connection_info(db_file_path: str):

@@ -364,9 +364,15 @@ class TestTxRollupE2E(unittest.TestCase):
         assert len(ledger.rollups) == 2
         assert txrollup.id in [r.id for r in ledger.rollups]
         assert txrollup2.id in [r.id for r in ledger.rollups]
-
         assert txrollup.ledger.id == ledger.id
         assert txrollup2.ledger.id == ledger.id
+        assert len(ledger.archived_transactions) == 4
+        archived_txn: models.ArchivedTransaction = ledger.archived_transactions[0]
+        assert len(archived_txn.entries) == 2
+        archived_entry: models.ArchivedEntry = archived_txn.entries[0]
+        assert len(archived_entry.transactions) == 1
+        assert archived_entry.transactions[0].id == archived_txn.id
+        assert len(asset_acct.archived_entries) == 4
 
         # make some more txns
         txn5 = self.create_txn(asset_acct, equity_acct, 100)

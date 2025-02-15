@@ -32,6 +32,7 @@ class Account(HashedModel):
     category: RelatedModel
     children: RelatedCollection
     entries: RelatedCollection
+    archived_entries: RelatedCollection
 
     # override automatic property
     @property

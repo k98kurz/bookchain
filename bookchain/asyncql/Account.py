@@ -34,6 +34,7 @@ class Account(AsyncHashedModel):
     category: AsyncRelatedModel
     children: AsyncRelatedCollection
     entries: AsyncRelatedCollection
+    archived_entries: AsyncRelatedCollection
 
     # override automatic property
     @property
