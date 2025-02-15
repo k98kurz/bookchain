@@ -10,6 +10,12 @@ import packify
 
 
 class Transaction(HashedModel):
+    """A Transaction is a collection of connected Entries that are
+        recorded on the Ledgers of the Identities that are party to the
+        Transaction. Any Entry for an Account that has a locking_script
+        will require a valid tapscript unlocking script to be recorded
+        in the auth_scripts dict of the Transaction.
+    """
     connection_info: str = ''
     table: str = 'transactions'
     id_column: str = 'id'

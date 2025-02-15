@@ -8,6 +8,10 @@ import packify
 
 
 class ArchivedEntry(AsyncHashedModel):
+    """Optional class for storing the trimmed Entries connected to an
+        ArchivedTransaction. Must be used in conjunction with
+        ArchivedTransaction.
+    """
     connection_info: str = ''
     table: str = 'archived_entries'
     id_column: str = 'id'

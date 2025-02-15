@@ -9,6 +9,12 @@ import packify
 
 
 class ArchivedTransaction(AsyncHashedModel):
+    """Optional class for storing a trimmed Transaction after is has
+        included in a TxRollup. This allows accessing the trimmed
+        Transaction details more efficiently than by loading the
+        DeletedModel that contains the trimmed Transaction. Must be used
+        in conjunction with ArchivedEntry.
+    """
     connection_info: str = ''
     table: str = 'archived_transactions'
     id_column: str = 'id'
