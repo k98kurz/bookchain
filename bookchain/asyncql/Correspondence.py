@@ -24,6 +24,7 @@ class Correspondence(AsyncHashedModel):
 
     @property
     def details(self) -> dict:
+        """Returns the details of the correspondence as a dict."""
         return packify.unpack(self.data.get('details', b'd\x00\x00\x00\x00'))
     @details.setter
     def details(self, val: dict):
@@ -53,6 +54,11 @@ class Correspondence(AsyncHashedModel):
             vert(k in self.identity_ids or k == self.id,
                  f'ID {k} not of correspondence or one of its identities')
         self.data['signatures'] = packify.pack(val)
+
+    @property
+    def txru_lock(self) -> bytes:
+        """Returns the txru_lock directly from the details field."""
+        return self.details.get('txru_lock', None)
 
     async def get_accounts(self) -> dict[str, dict[AccountType, Account]]:
         """Loads the relevant nostro and vostro Accounts for the

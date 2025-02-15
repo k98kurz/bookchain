@@ -275,7 +275,7 @@ class TxRollup(AsyncHashedModel):
             await correspondence.identities().reload()
             # either the txru_lock has been set and fulfilled, or both
             # identities have signed independently
-            txru_lock = correspondence.details.get('txru_lock', None)
+            txru_lock = correspondence.txru_lock
             if txru_lock is None:
                 pubkeys = [identity.pubkey for identity in correspondence.identities]
                 # if not all identities have a pubkey and the txru_lock

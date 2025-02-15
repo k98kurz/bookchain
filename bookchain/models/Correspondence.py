@@ -9,6 +9,17 @@ import packify
 
 
 class Correspondence(HashedModel):
+    """A Correspondence is a typically bilateral credit arrangement in
+        which two Identities transact with each other using Nostro and
+        Vostro accounts on their Ledgers, where the Nostro asset account
+        on one Identity's Ledger corresponds to the Vostro liability
+        account on the other Identity's Ledger. A transfer takes the
+        form of a Transaction with four Entries: one debiting (deducting
+        from) the Equity account of the payer; one crediting the Nostro
+        or Vostro account on the payer's Ledger; one debiting the Nostro
+        or Vostro account on the payee's Ledger; and one crediting the
+        Equity account of the payee.
+    """
     table: str = 'correspondences'
     id_column: str = 'id'
     columns: tuple[str] = ('id', 'identity_ids', 'ledger_ids', 'details', 'signatures')
@@ -24,6 +35,7 @@ class Correspondence(HashedModel):
 
     @property
     def details(self) -> dict:
+        """Returns the details of the correspondence as a dict."""
         return packify.unpack(self.data.get('details', b'd\x00\x00\x00\x00'))
     @details.setter
     def details(self, val: dict):
@@ -53,6 +65,11 @@ class Correspondence(HashedModel):
             vert(k in self.identity_ids or k == self.id,
                  f'ID {k} not of correspondence or one of its identities')
         self.data['signatures'] = packify.pack(val)
+
+    @property
+    def txru_lock(self) -> bytes:
+        """Returns the txru_lock directly from the details field."""
+        return self.details.get('txru_lock', None)
 
     def get_accounts(self) -> dict[str, dict[AccountType, Account]]:
         """Loads the relevant nostro and vostro Accounts for the
