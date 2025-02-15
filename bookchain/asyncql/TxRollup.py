@@ -57,11 +57,11 @@ class TxRollup(AsyncHashedModel):
     balances: bytes
     timestamp: str
     auth_script: bytes|None
-    correspondence: AsyncRelatedModel|None
-    ledger: AsyncRelatedModel|None
+    correspondence: AsyncRelatedModel
+    ledger: AsyncRelatedModel
     transactions: AsyncRelatedCollection
-    parent: AsyncRelatedModel|None
-    child: AsyncRelatedModel|None
+    parent: AsyncRelatedModel
+    child: AsyncRelatedModel
 
     def public(self) -> dict:
         """Returns the public data for mirroring this TxRollup. Excludes

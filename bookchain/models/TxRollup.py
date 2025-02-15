@@ -57,11 +57,11 @@ class TxRollup(HashedModel):
     balances: bytes
     timestamp: str
     auth_script: bytes|None
-    correspondence: RelatedModel|None
-    ledger: RelatedModel|None
+    correspondence: RelatedModel
+    ledger: RelatedModel
     transactions: RelatedCollection
-    parent: RelatedModel|None
-    child: RelatedModel|None
+    parent: RelatedModel
+    child: RelatedModel
 
     def public(self) -> dict:
         """Returns the public data for mirroring this TxRollup. Excludes
