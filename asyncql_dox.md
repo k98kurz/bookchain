@@ -10,6 +10,73 @@ Enum of valid Account types.
 
 Enum of valid Entry types (CREDIT and DEBIT).
 
+### `ArchivedEntry(AsyncHashedModel)`
+
+Optional class for storing the trimmed Entries connected to an
+ArchivedTransaction. Must be used in conjunction with ArchivedTransaction.
+
+#### Annotations
+
+- table: str
+- id_column: str
+- columns: tuple[str]
+- id: str
+- name: str
+- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- connection_info: str
+- data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
+- columns_excluded_from_hash: tuple[str]
+- details: bytes
+- type: str
+- amount: int
+- nonce: bytes
+- account_id: str
+- account: AsyncRelatedModel
+- transactions: AsyncRelatedCollection
+
+#### Properties
+
+- type: The EntryType of the ArchivedEntry.
+- details: A packify.SerializableType stored in the database as a blob.
+- transactions: The related ArchivedTransactions. Setting raises TypeError if
+the precondition check fails.
+- account: The related Account. Setting raises TypeError if the precondition
+check fails.
+
+#### Methods
+
+##### `@classmethod generate_id(data: dict) -> str:`
+
+Generate an id by hashing the non-id contents. Raises TypeError for unencodable
+type (calls packify.pack).
+
+##### `@classmethod async insert(data: dict) -> ArchivedEntry | None:`
+
+Ensure data is encoded before inserting.
+
+##### `@classmethod async insert_many(items: list[dict]) -> int:`
+
+Ensure data is encoded before inserting.
+
+##### `@classmethod query(conditions: dict = None) -> AsyncQueryBuilderProtocol:`
+
+Ensure conditions are encoded properly before querying.
+
+##### `@classmethod set_sigfield_plugin(plugin: Callable):`
+
+Sets the plugin function used by self.get_sigfields that parses the
+ArchivedEntry to extract the correct sigfields for tapescript authorization.
+This is an optional override.
+
+##### `get_sigfields() -> dict[str, bytes]:`
+
+Get the sigfields for tapescript authorization. By default, it returns
+{sigfield1: self.generate_id()} because the ID cryptographically commits to all
+record data. If the set_sigfield_plugin method was previously called, this will
+instead return the result of calling the plugin function.
+
 ### `Entry(AsyncHashedModel)`
 
 #### Annotations
@@ -44,10 +111,6 @@ precondition check fails.
 
 #### Methods
 
-##### `__hash__() -> int:`
-
-##### `@staticmethod parse(models: Entry | list[Entry]) -> Entry | list[Entry]:`
-
 ##### `@classmethod generate_id(data: dict) -> str:`
 
 Generate an id by hashing the non-id contents. Raises TypeError for unencodable
@@ -78,6 +141,11 @@ Get the sigfields for tapescript authorization. By default, it returns
 record data. If the set_sigfield_plugin method was previously called, this will
 instead return the result of calling the plugin function.
 
+##### `async archive() -> ArchivedEntry | None:`
+
+Archive the Entry. If it has already been archived, return the existing
+ArchivedEntry.
+
 ### `Account(AsyncHashedModel)`
 
 #### Annotations
@@ -106,6 +174,7 @@ instead return the result of calling the plugin function.
 - category: AsyncRelatedModel
 - children: AsyncRelatedCollection
 - entries: AsyncRelatedCollection
+- archived_entries: AsyncRelatedCollection
 
 #### Properties
 
@@ -123,6 +192,8 @@ check fails.
 precondition check fails.
 - entries: The related Entrys. Setting raises TypeError if the precondition
 check fails.
+- archived_entries: The related ArchivedEntrys. Setting raises TypeError if the
+precondition check fails.
 
 #### Methods
 
@@ -142,10 +213,11 @@ Ensure updates are encoded before updating.
 
 Ensure conditions are encoded before querying.
 
-##### `async balance(include_sub_accounts: bool = True) -> int:`
+##### `async balance(include_sub_accounts: bool = True, rolled_up_balances: dict[str, tuple[EntryType, int]] = {}) -> int:`
 
 Tally all entries for this account. Includes the balances of all sub-accounts if
-include_sub_accounts is True.
+include_sub_accounts is True. To get an accurate balance, pass in the balances
+from the most recent TxRollup.
 
 ##### `validate_script(entry_type: EntryType, auth_script: bytes | Script, tapescript_runtime: dict = {}) -> bool:`
 
@@ -224,6 +296,8 @@ Ensure conditions are encoded before querying.
 - currency: AsyncRelatedModel
 - accounts: AsyncRelatedCollection
 - transactions: AsyncRelatedCollection
+- archived_transactions: AsyncRelatedCollection
+- rollups: AsyncRelatedCollection
 
 #### Properties
 
@@ -236,6 +310,10 @@ check fails.
 check fails.
 - transactions: The related Transactions. Setting raises TypeError if the
 precondition check fails.
+- rollups: The related TxRollups. Setting raises TypeError if the precondition
+check fails.
+- archived_transactions: The related ArchivedTransactions. Setting raises
+TypeError if the precondition check fails.
 
 #### Methods
 
@@ -297,11 +375,6 @@ precondition check fails.
 
 #### Methods
 
-##### `@classmethod generate_id(data: dict) -> str:`
-
-Generate an ID that does not commit to the columns that should be excluded from
-the cryptographic commitment.
-
 ##### `public() -> dict:`
 
 Return the public data for cloning the Identity.
@@ -329,22 +402,30 @@ Get the nosto and vostro accounts for a correspondent.
 - data_original: MappingProxyType
 - _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
-- details: str
+- details: bytes
 - identity_ids: str
 - ledger_ids: str
+- signatures: bytes | None
 - identities: AsyncRelatedCollection
 - ledgers: AsyncRelatedCollection
+- rollups: AsyncRelatedCollection
 
 #### Properties
 
+- details: Returns the details of the correspondence as a dict.
+- signatures: Returns the signatures of the correspondences as a dict mapping
+Identity ID to bytes signature.
+- txru_lock: Returns the txru_lock directly from the details field.
 - ledgers: The related Ledgers. Setting raises TypeError if the precondition
 check fails.
 - identities: The related Identitys. Setting raises TypeError if the
 precondition check fails.
+- rollups: The related TxRollups. Setting raises TypeError if the precondition
+check fails.
 
 #### Methods
 
-##### `async get_accounts() -> list[Account]:`
+##### `async get_accounts() -> dict[str, dict[AccountType, Account]]:`
 
 Loads the relevant nostro and vostro Accounts for the Identities that are part
 of the Correspondence.
@@ -361,10 +442,63 @@ Prepares two lists of entries in which the payer remits to the payee the given
 amount: one in which the nostro account on the payer's ledger is credited and
 one in which the vostro account on the payer's ledger is credited.
 
-##### `async balances() -> dict[str, int]:`
+##### `async balances(rolled_up_balances: dict[str, tuple[EntryType, int]] = {}) -> dict[str, int]:`
 
 Returns the balances of the correspondents as a dict mapping str Identity ID to
 signed int (equal to Nostro - Vostro).
+
+### `ArchivedTransaction(AsyncHashedModel)`
+
+Optional class for storing a trimmed Transaction after is has included in a
+TxRollup. This allows accessing the trimmed Transaction details more efficiently
+than by loading the DeletedModel that contains the trimmed Transaction. Must be
+used in conjunction with ArchivedEntry.
+
+#### Annotations
+
+- table: str
+- id_column: str
+- columns: tuple[str]
+- id: str
+- name: str
+- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- connection_info: str
+- data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
+- columns_excluded_from_hash: tuple[str]
+- details: bytes
+- entry_ids: str
+- ledger_ids: str
+- timestamp: str
+- auth_scripts: bytes
+- entries: AsyncRelatedCollection
+- ledgers: AsyncRelatedCollection
+
+#### Properties
+
+- details: A packify.SerializableType stored in the database as a blob.
+- auth_scripts: A dict mapping account IDs to tapescript unlocking script bytes.
+- entries: The related ArchivedEntrys. Setting raises TypeError if the
+precondition check fails.
+- ledgers: The related Ledgers. Setting raises TypeError if the precondition
+check fails.
+
+#### Methods
+
+##### `async validate(tapescript_runtime: dict = {}, reload: bool = False) -> bool:`
+
+Determines if a Transaction is valid using the rules of accounting and checking
+all auth scripts against their locking scripts. The tapescript_runtime can be
+scoped to each entry ID. Raises TypeError for invalid arguments. Raises
+ValueError if the entries do not balance for each ledger; if a required auth
+script is missing; or if any of the entries is contained within an existing
+Transaction. If reload is set to True, entries and accounts will be reloaded
+from the database.
+
+##### `async save(tapescript_runtime: dict = {}, reload: bool = False) -> ArchivedTransaction:`
+
+Validate the transaction, save the entries, then save the transaction.
 
 ### `Currency(AsyncHashedModel)`
 
@@ -425,6 +559,11 @@ Format an amount using the correct number of decimal_places.
 
 ### `Transaction(AsyncHashedModel)`
 
+A Transaction is a collection of connected Entries that are recorded on the
+Ledgers of the Identities that are party to the Transaction. Any Entry for an
+Account that has a locking_script will require a valid tapscript unlocking
+script to be recorded in the auth_scripts dict of the Transaction.
+
 #### Annotations
 
 - table: str
@@ -445,6 +584,7 @@ Format an amount using the correct number of decimal_places.
 - auth_scripts: bytes
 - entries: AsyncRelatedCollection
 - ledgers: AsyncRelatedCollection
+- rollups: AsyncRelatedCollection
 
 #### Properties
 
@@ -454,13 +594,10 @@ Format an amount using the correct number of decimal_places.
 check fails.
 - ledgers: The related Ledgers. Setting raises TypeError if the precondition
 check fails.
+- rollups: The related TxRollups. Setting raises TypeError if the precondition
+check fails.
 
 #### Methods
-
-##### `@classmethod generate_id(data: dict) -> str:`
-
-Generate a txn id by hashing the entry_ids, ledger_ids, details, and timestamp.
-Raises TypeError for unencodable type (calls packify.pack).
 
 ##### `@classmethod async prepare(entries: list[Entry], timestamp: str, auth_scripts: dict = {}, details: packify.SerializableType = None, tapescript_runtime: dict = {}, reload: bool = False) -> Transaction:`
 
@@ -484,6 +621,139 @@ from the database.
 ##### `async save(tapescript_runtime: dict = {}, reload: bool = False) -> Transaction:`
 
 Validate the transaction, save the entries, then save the transaction.
+
+##### `async archive() -> ArchivedTransaction:`
+
+Archive the Transaction. If it has already been archived, return the existing
+ArchivedTransaction.
+
+### `TxRollup(AsyncHashedModel)`
+
+A Transaction Roll-up is a collection of Transactions that have been
+consolidated: the IDs of the committed Transactions are the leaves of a Merkle
+tree, and the aggregate effects of the Transactions are maintained in a dict
+mapping account IDs to tuples of EntryType and int balances. A TxRollup created
+for a Correspondence must have a valid auth_script that unlocks the txru_lock in
+the Correspondence's details (or an n-of-n multisig lock made from the pubkeys
+of the Correspondence's identities if no txru_lock was saved). The height of a
+TxRollup is the number of TxRollups in its chain -- they form a blockchain of
+TxRollups, hence the inclusion of a parent_id. Only one child TxRollup can be
+added for a given parent TxRollup, and the balances of the child TxRollup are
+the sum of the effects of the Transactions in the child TxRollup and the parent
+TxRollup balances; i.e. the most recent TxRollup is the sum of all the
+Transactions committed to in previous TxRollups in the chain. Inclusion of a
+Transaction can only be proven using the Merkle tree of the TxRollup in which it
+was committed and only if the full list of tx_ids is saved, but the proof can be
+verified by mirrors that have only the tx_root.
+
+#### Annotations
+
+- table: str
+- id_column: str
+- columns: tuple[str]
+- id: str
+- name: str
+- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- connection_info: str
+- data: dict
+- data_original: MappingProxyType
+- _event_hooks: dict[str, list[Callable]]
+- columns_excluded_from_hash: tuple[str]
+- details: bytes
+- height: int
+- parent_id: str | None
+- tx_ids: str
+- tx_root: str
+- correspondence_id: str | None
+- ledger_id: str | None
+- balances: bytes
+- timestamp: str
+- auth_script: bytes | None
+- correspondence: AsyncRelatedModel | None
+- ledger: AsyncRelatedModel | None
+- transactions: AsyncRelatedCollection
+- parent: AsyncRelatedModel | None
+- children: AsyncRelatedCollection
+
+#### Properties
+
+- tx_ids: A list of transaction IDs.
+- balances: A dict mapping account IDs to tuple[EntryType, int] balances.
+- tree: A merkle tree of the transaction IDs.
+- transactions: The related Transactions. Setting raises TypeError if the
+precondition check fails.
+- ledger: The related Ledger. Setting raises TypeError if the precondition check
+fails.
+- parent: The related TxRollup. Setting raises TypeError if the precondition
+check fails.
+- children: The related TxRollups. Setting raises TypeError if the precondition
+check fails.
+- correspondence: The related Correspondence. Setting raises TypeError if the
+precondition check fails.
+
+#### Methods
+
+##### `public() -> dict:`
+
+Returns the public data for mirroring this TxRollup. Excludes the tx_ids.
+
+##### `prove_txn_inclusion(txn_id: str | bytes) -> bytes:`
+
+Proves that a transaction is included in the tx rollup.
+
+##### `verify_txn_inclusion_proof(txn_id: str | bytes, proof: bytes) -> bool:`
+
+Verifies that a transaction is included in the tx rollup.
+
+##### `@classmethod async calculate_balances(txns: list[Transaction], parent_balances: dict[str, tuple[EntryType, int]] | None = None, reload: bool = False) -> dict[str, tuple[EntryType, int]]:`
+
+Calculates the account balances for a list of rolled-up transactions. If
+parent_balances is provided, those are the starting balances to which the
+balances of the rolled-up transactions are added. If reload is True, the entries
+are reloaded from the database.
+
+##### `@classmethod async prepare(txns: list[Transaction], parent_id: str | None = None, correspondence: Correspondence | None = None, ledger: Ledger | None = None, reload: bool = False) -> TxRollup:`
+
+Prepare a tx rollup by checking that all txns are for the accounts of the given
+correspondence or belong to the same ledger if no correspondence is provided.
+Raises TypeError if txns is not a list of Transaction objects. Raises ValueError
+if any txns are not for accounts of the given correspondence or of the same
+ledger if no correspondence is provided, or if the parent TxRollup already has a
+child, or if there are no txns and no ledger or correspondence is provided, or
+if a TxRollup chain already exists for the given ledger or correspondence when
+no parent is provided.
+
+##### `async validate(reload: bool = False) -> bool:`
+
+Validates that a TxRollup has been authorized properly; that the balances are
+correct; and that the height is 1 + the height of the parent tx rollup (if one
+exists); and that there is no other chain for the relevant ledger or
+correspondence when no parent is provided.
+
+##### `async trim(archive: bool = True) -> int:`
+
+Trims the transactions and entries committed to in this tx rollup. Returns the
+number of transactions trimmed. If archive is True, the transactions and entries
+are archived before being deleted. Raises ValueError if the tx rollup is not
+valid.
+
+##### `trimmed_transactions() -> AsyncSqlQueryBuilder:`
+
+Returns a query builder for DeletedModels containing the trimmed transactions
+committed to in this tx rollup.
+
+##### `async trimmed_entries() -> AsyncSqlQueryBuilder:`
+
+Returns a query builder for DeletedModels containing the trimmed entries from
+trimmed transactions committed to in this tx rollup.
+
+##### `archived_transactions() -> AsyncSqlQueryBuilder:`
+
+Returns a query builder for ArchivedTransactions committed to in this tx rollup.
+
+##### `async archived_entries() -> AsyncSqlQueryBuilder:`
+
+Returns a query builder for ArchivedEntries committed to in this tx rollup.
 
 ### `Vendor(AsyncHashedModel)`
 
@@ -589,4 +859,5 @@ TypeError if details contains unseriazliable type.
 
 Set the connection info for all models to use the specified sqlite3 database
 file path.
+
 
