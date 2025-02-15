@@ -203,7 +203,7 @@ There are a total of 17 tests (12 e2e tests and 5 tests for miscellaneous
 tools/features). To run them, clone the repo, set up a virtual environment
 (e.g. `python -m venv venv && source venv/bin/activate`), install the
 dependencies with `pip install -r requirements.txt`, and then run the following:
-`find tests -name test_*.py -print -exec python {} \;`. On Windows, the 7 test
+`find tests -name test_*.py -print -exec python {} \;`. On Windows, the 9 test
 files will have to be individually run with the following:
 
 ```bash
