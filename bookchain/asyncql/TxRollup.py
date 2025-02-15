@@ -18,21 +18,26 @@ import tapescript
 
 
 class TxRollup(AsyncHashedModel):
-    """This class represents a transaction rollup, which is a collection
-        of transactions that have consolidated: the IDs of the committed
-        transactions are the leaves of a Merkle tree, and the aggregate
-        effects of the transactions are maintained in a dict mapping
-        account IDs to tuples of EntryType and int balances. A TxRollup
-        created for a Correspondence must have a valid auth_script that
-        unlocks the txru_lock in the Correspondence's details (or an
-        n-of-n multisig made from the pubkeys of the Correspondence's
-        identities if no txru_lock was saved). The height of a TxRollup
-        is the number of TxRollups in its chain -- they form a
-        blockchain of TxRollups, hence the inclusion of a parent_id.
-        Only one child TxRollup can be added for a given parent TxRollup,
-        and the balances of the child TxRollup are the sum of the
-        effects of the transactions in the child TxRollup and the
-        parent TxRollup balances.
+    """A Transaction Roll-up is a collection of Transactions that have
+        been consolidated: the IDs of the committed Transactions are the
+        leaves of a Merkle tree, and the aggregate effects of the
+        Transactions are maintained in a dict mapping account IDs to
+        tuples of EntryType and int balances. A TxRollup created for a
+        Correspondence must have a valid auth_script that unlocks the
+        txru_lock in the Correspondence's details (or an n-of-n multisig
+        lock made from the pubkeys of the Correspondence's identities if
+        no txru_lock was saved). The height of a TxRollup is the number
+        of TxRollups in its chain -- they form a blockchain of TxRollups,
+        hence the inclusion of a parent_id. Only one child TxRollup can
+        be added for a given parent TxRollup, and the balances of the
+        child TxRollup are the sum of the effects of the Transactions in
+        the child TxRollup and the parent TxRollup balances; i.e. the
+        most recent TxRollup is the sum of all the Transactions
+        committed to in previous TxRollups in the chain. Inclusion of a
+        Transaction can only be proven using the Merkle tree of the
+        TxRollup in which it was committed and only if the full list of
+        tx_ids is saved, but the proof can be verified by mirrors that
+        have only the tx_root.
     """
     connection_info: str = ''
     table: str = 'txn_rollups'
@@ -167,7 +172,9 @@ class TxRollup(AsyncHashedModel):
             if any txns are not for accounts of the given correspondence
             or of the same ledger if no correspondence is provided, or
             if the parent TxRollup already has a child, or if there are
-            no txns and no ledger or correspondence is provided.
+            no txns and no ledger or correspondence is provided, or if
+            a TxRollup chain already exists for the given ledger or
+            correspondence when no parent is provided.
         """
         tert(all([type(t) is Transaction for t in txns]),
             'txns must be a list of Transaction objects')
@@ -211,13 +218,21 @@ class TxRollup(AsyncHashedModel):
                     vert(e.account_id in acct_ids,
                         'all txns must be for accounts from the same correspondence')
 
-        # if there is a parent, get its balances if it is a tx rollup
         if parent_id is not None:
+            # if there is a parent, get its balances and set the height
             parent: TxRollup|None = await TxRollup.find(parent_id)
             vert(parent is not None, 'parent must exist')
             balances = parent.balances
             txru.height = parent.height + 1
             vert((await parent.children().query().count()) == 0, 'parent already has a child')
+        else:
+            # if there is no parent, ensure there is no other chain
+            if ledger is not None:
+                vert(await TxRollup.query().equal('ledger_id', ledger.id).count() == 0,
+                    'the given ledger already has a TxRollup chain')
+            elif correspondence is not None:
+                vert(await TxRollup.query().equal('correspondence_id', correspondence.id).count() == 0,
+                    'the given correspondence already has a TxRollup chain')
 
         # aggregate balances from txn entries
         balances = await cls.calculate_balances(txns, balances, reload=reload)
@@ -236,7 +251,9 @@ class TxRollup(AsyncHashedModel):
     async def validate(self, reload: bool = False) -> bool:
         """Validates that a TxRollup has been authorized properly; that
             the balances are correct; and that the height is 1 + the
-            height of the parent tx rollup (if one exists).
+            height of the parent tx rollup (if one exists); and that
+            there is no other chain for the relevant ledger or
+            correspondence when no parent is provided.
         """
         authorized = True
         balances = {}
@@ -281,6 +298,34 @@ class TxRollup(AsyncHashedModel):
         else:
             if parent.height + 1 != self.height:
                 return False
+
+        # ensure there is no other chain
+        if parent is None:
+            self_id = self.id or self.generate_id(self.data)
+            if self.correspondence_id is not None:
+                if await TxRollup.query().equal(
+                    'correspondence_id',
+                    self.correspondence_id
+                ).not_equal('id', self_id).count() > 0:
+                    return False
+            elif self.ledger_id is not None:
+                if await TxRollup.query().equal(
+                    'ledger_id',
+                    self.ledger_id
+                ).not_equal('id', self_id).count() > 0:
+                    return False
+            elif len(self.tx_ids) > 0:
+                txn: Transaction|None = await Transaction.find(self.tx_ids[0])
+                if txn is not None:
+                    await txn.entries().reload()
+                    if len(txn.entries) > 0:
+                        await txn.entries[0].account().reload()
+                        ledger_id = txn.entries[0].account.ledger_id
+                        if await TxRollup.query().equal(
+                            'ledger_id',
+                            ledger_id
+                        ).not_equal('id', self_id).count() > 0:
+                            return False
 
         # recalculate the balances
         balances = await self.calculate_balances(self.transactions, balances, reload=reload)

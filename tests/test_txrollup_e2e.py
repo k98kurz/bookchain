@@ -351,6 +351,11 @@ class TestTxRollupE2E(unittest.TestCase):
         assert txrollup2.validate()
         txrollup2.save()
 
+        # attempt to create a competing txrollup chain
+        with self.assertRaises(ValueError) as e:
+            models.TxRollup.prepare([txn3, txn4])
+        assert str(e.exception) == 'the given ledger already has a TxRollup chain'
+
         # prove inclusion of txn
         proof = txrollup2.prove_txn_inclusion(txn3.id)
         assert txrollup2.verify_txn_inclusion_proof(txn3.id, proof)
@@ -395,6 +400,11 @@ class TestTxRollupE2E(unittest.TestCase):
         txrollup3.parent_id = txrollup.id
         txrollup3.height = txrollup.height + 1
         txrollup3.balances = models.TxRollup.calculate_balances([txn5, txn6], txrollup.balances)
+        assert not txrollup3.validate()
+        # reset the parent_id and height to attempt to make a competing chain
+        txrollup3.parent_id = None
+        txrollup3.height = 0
+        txrollup3.balances = models.TxRollup.calculate_balances([txn5, txn6])
         assert not txrollup3.validate()
 
         # prepare a txrollup with just one txn
