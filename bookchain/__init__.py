@@ -23,6 +23,11 @@ import sqloquent.tools
 
 __version__ = '0.3.0'
 
+def version() -> str:
+    """Returns the version of the bookchain package."""
+    return __version__
+
+
 def set_connection_info(db_file_path: str):
     """Set the connection info for all models to use the specified
         sqlite3 database file path.
