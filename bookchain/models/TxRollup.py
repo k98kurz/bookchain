@@ -58,6 +58,15 @@ class TxRollup(HashedModel):
     parent: RelatedModel|None
     children: RelatedCollection
 
+    def public(self) -> dict:
+        """Returns the public data for mirroring this TxRollup. Excludes
+            the tx_ids.
+        """
+        return {
+            k:v for k,v in self.data.items()
+            if k != 'tx_ids'
+        }
+
     @property
     def tx_ids(self) -> list[str]:
         """A list of transaction IDs."""
@@ -71,6 +80,8 @@ class TxRollup(HashedModel):
         self.data['tx_ids'] = ','.join(val)
         # convert to bytes and build a merkle tree
         val = [bytes.fromhex(txn_id) for txn_id in val]
+        while len(val) < 2:
+            val = [b'\x00'*32, *val]
         tree = Tree.from_leaves(val)
         self.data['tx_root'] = tree.root.hex()
 
@@ -113,7 +124,7 @@ class TxRollup(HashedModel):
     def verify_txn_inclusion_proof(self, txn_id: str|bytes, proof: bytes) -> bool:
         """Verifies that a transaction is included in the tx rollup."""
         txn_id = bytes.fromhex(txn_id) if type(txn_id) is str else txn_id
-        return self.tree.verify(bytes.fromhex(self.tx_root), txn_id, proof)
+        return Tree.verify(bytes.fromhex(self.tx_root), txn_id, proof)
 
     @classmethod
     def calculate_balances(
@@ -146,7 +157,8 @@ class TxRollup(HashedModel):
 
     @classmethod
     def prepare(cls, txns: list[Transaction], parent_id: str|None = None,
-                correspondence: Correspondence|None = None, reload: bool = False
+                correspondence: Correspondence|None = None,
+                ledger: Ledger|None = None, reload: bool = False
                 ) -> TxRollup:
         """Prepare a tx rollup by checking that all txns are for the
             accounts of the given correspondence or belong to the same
@@ -154,12 +166,15 @@ class TxRollup(HashedModel):
             txns is not a list of Transaction objects. Raises ValueError
             if any txns are not for accounts of the given correspondence
             or of the same ledger if no correspondence is provided, or
-            if the parent TxRollup already has a child.
+            if the parent TxRollup already has a child, or if there are
+            no txns and no ledger or correspondence is provided.
         """
         tert(all([type(t) is Transaction for t in txns]),
             'txns must be a list of Transaction objects')
         tert(type(correspondence) is Correspondence or correspondence is None,
             'correspondence must be a Correspondence object or None')
+        vert(len(txns) > 0 or ledger is not None or correspondence is not None,
+            'either txns, ledger, or correspondence must be provided')
 
         accounts = []
         acct_ids = set()
@@ -170,10 +185,12 @@ class TxRollup(HashedModel):
 
         if correspondence is None:
             # all txns must be accounts from the same ledger
-            txns[0].entries().reload()
-            txns[0].entries[0].account().reload()
-            ledger: Ledger = txns[0].entries[0].account.ledger
-            ledger.accounts().reload()
+            if len(txns) > 0 and ledger is None:
+                txns[0].entries().reload()
+                txns[0].entries[0].account().reload()
+                ledger: Ledger = txns[0].entries[0].account.ledger
+            if reload:
+                ledger.accounts().reload()
             accounts = list(ledger.accounts)
             acct_ids = set([a.id for a in accounts])
             for txn in txns:
@@ -211,7 +228,8 @@ class TxRollup(HashedModel):
         if correspondence is not None:
             txru.correspondence_id = correspondence.id
         else:
-            ledger: Ledger = txns[0].entries[0].account.ledger
+            if len(txns) > 0 and ledger is None:
+                ledger: Ledger = txns[0].entries[0].account.ledger
             txru.ledger_id = ledger.id
         return txru
 

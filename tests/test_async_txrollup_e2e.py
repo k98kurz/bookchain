@@ -338,6 +338,14 @@ class TestTxRollupE2E(unittest.TestCase):
         assert run(equity_acct.balance(rolled_up_balances=txrollup.balances)) == equity_starting_balance + 300, \
             f'{run(equity_acct.balance(rolled_up_balances=txrollup.balances))} != {equity_starting_balance} + 300'
 
+        # mirror the txrollup's public data
+        public_data = txrollup.public()
+        mirrored = asyncql.TxRollup(public_data)
+        assert run(mirrored.validate())
+        # inclusion proofs should be verified by mirrored TxRollup
+        proof = txrollup.prove_txn_inclusion(txn2.id)
+        assert mirrored.verify_txn_inclusion_proof(txn2.id, proof)
+
         # create more txns and txrollups
         txn3 = run(self.create_txn(asset_acct, equity_acct, 10))
         txn4 = run(self.create_txn(asset_acct, equity_acct, 20))
@@ -390,6 +398,14 @@ class TestTxRollupE2E(unittest.TestCase):
         txrollup3.height = txrollup.height + 1
         txrollup3.balances = run(asyncql.TxRollup.calculate_balances([txn5, txn6], txrollup.balances))
         assert not run(txrollup3.validate())
+
+        # prepare a txrollup with just one txn
+        txrollup3 = run(asyncql.TxRollup.prepare([txn5], txrollup2.id))
+        assert run(txrollup3.validate())
+
+        # prepare an empty txrollup
+        txrollup3 = run(asyncql.TxRollup.prepare([], txrollup2.id, ledger=ledger))
+        assert run(txrollup3.validate())
 
     def test_with_correspondence_e2e(self):
         run(self.setup_currency())
