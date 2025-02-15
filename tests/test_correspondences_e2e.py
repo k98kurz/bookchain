@@ -392,6 +392,9 @@ class TestCorrespondencesE2E(unittest.TestCase):
         )
         txn.save()
 
+        balances = correspondence.balances()
+        assert balances[alice.id] == -balances[bob.id]
+
         # create an invalid transaction: valid auth, invalid entries
         nonce = os.urandom(16)
         equity_entry_alice = models.Entry({
