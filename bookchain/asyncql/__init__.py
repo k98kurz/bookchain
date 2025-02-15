@@ -14,6 +14,7 @@ from .Vendor import Vendor
 from sqloquent.asyncql import (
     AsyncDeletedModel, AsyncAttachment,
     async_contains, async_within, async_has_many, async_belongs_to,
+    async_has_one,
 )
 
 
@@ -52,7 +53,7 @@ TxRollup.ledger = async_belongs_to(TxRollup, Ledger, 'ledger_id')
 Ledger.rollups = async_within(Ledger, TxRollup, 'ledger_id')
 
 TxRollup.parent = async_belongs_to(TxRollup, TxRollup, 'parent_id')
-TxRollup.children = async_has_many(TxRollup, TxRollup, 'parent_id')
+TxRollup.child = async_has_one(TxRollup, TxRollup, 'parent_id')
 
 TxRollup.correspondence = async_belongs_to(TxRollup, Correspondence, 'correspondence_id')
 Correspondence.rollups = async_within(Correspondence, TxRollup, 'correspondence_id')
@@ -93,3 +94,4 @@ del async_contains
 del async_belongs_to
 del async_within
 del async_has_many
+del async_has_one

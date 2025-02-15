@@ -61,7 +61,7 @@ class TxRollup(HashedModel):
     ledger: RelatedModel|None
     transactions: RelatedCollection
     parent: RelatedModel|None
-    children: RelatedCollection
+    child: RelatedModel|None
 
     def public(self) -> dict:
         """Returns the public data for mirroring this TxRollup. Excludes
@@ -224,7 +224,7 @@ class TxRollup(HashedModel):
             vert(parent is not None, 'parent must exist')
             balances = parent.balances
             txru.height = parent.height + 1
-            vert(parent.children().query().count() == 0, 'parent already has a child')
+            vert(parent.child().query().count() == 0, 'parent already has a child')
         else:
             # if there is no parent, ensure there is no other chain
             if ledger is not None:
@@ -264,10 +264,10 @@ class TxRollup(HashedModel):
             parent: TxRollup|None = TxRollup.find(self.parent_id)
             vert(parent is not None, 'parent must exist')
             balances = parent.balances
-            parent.children().reload()
+            parent.child().reload()
             self_id = self.id or self.generate_id(self.data)
-            if len(parent.children) != 0:
-                if parent.children[0].id != self_id:
+            if parent.child.id is not None:
+                if parent.child.id != self_id:
                     return False
 
         if self.correspondence_id is not None:

@@ -11,7 +11,7 @@ from .Ledger import Ledger, LedgerType
 from .Transaction import Transaction
 from .TxRollup import TxRollup
 from .Vendor import Vendor
-from sqloquent import contains, within, has_many, belongs_to
+from sqloquent import contains, within, has_many, belongs_to, has_one
 
 
 Identity.ledgers = has_many(Identity, Ledger, 'identity_id')
@@ -49,7 +49,7 @@ TxRollup.ledger = belongs_to(TxRollup, Ledger, 'ledger_id')
 Ledger.rollups = within(Ledger, TxRollup, 'ledger_id')
 
 TxRollup.parent = belongs_to(TxRollup, TxRollup, 'parent_id')
-TxRollup.children = has_many(TxRollup, TxRollup, 'parent_id')
+TxRollup.child = has_one(TxRollup, TxRollup, 'parent_id')
 
 TxRollup.correspondence = belongs_to(TxRollup, Correspondence, 'correspondence_id')
 Correspondence.rollups = within(Correspondence, TxRollup, 'correspondence_id')
