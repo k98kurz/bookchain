@@ -59,6 +59,8 @@ class TestAsyncBasicE2E(unittest.TestCase):
         self.automigrate()
         assert run(asyncql.Account.query().count()) == 0
 
+        assert not run(asyncql.Transaction().validate())
+
         # setup account categories
         equity_acct_cat = run(asyncql.AccountCategory.insert({
             'name': 'Equity',

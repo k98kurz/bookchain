@@ -58,6 +58,8 @@ class TestBasicE2E(unittest.TestCase):
         self.automigrate()
         assert models.Account.query().count() == 0
 
+        assert not models.Transaction().validate()
+
         # setup account categories
         equity_acct_cat = models.AccountCategory.insert({
             'name': 'Equity',

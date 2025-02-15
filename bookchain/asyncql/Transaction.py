@@ -119,6 +119,9 @@ class Transaction(AsyncHashedModel):
         if reload:
             await self.entries().reload()
 
+        if len(self.entries) == 0:
+            return False
+
         # first check that all ledgers balance
         ledgers = {}
         entry: Entry
