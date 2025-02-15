@@ -1,3 +1,26 @@
+## 0.3.0
+
+- Updated `Correspondence`:
+  - New `signatures` column that is excluded from hashing
+  - `details` and `signatures` columns are stored as bytes but parsed as dicts
+    using packify
+  - Changed `get_accounts()` to return a dict with the same format as
+    `setup_accounts()`
+  - Updated `pay_correspondent()` and `balances()` internals to use new
+    `get_accounts()` output format
+- Added new `TxRollup` class to roll-up and prune old transactions
+- Added new `ArchivedTransaction` and `ArchivedEntry` classes to
+  archive transactions and entries (used by default, but can be skipped by
+  calling `TxRollup.trim(False)`)
+- Updated `Entry`: added `archive()` method
+- Updated `Transaction`:
+  - Added `archive()` method
+  - Updated `validate()` to use new `Correspondence.get_accounts()` output
+    format
+- Updated `Account`: `balance()` now accepts `rolled_up_balances` parameter
+  to get an accurate balance using the latest `TxRollup.balances` values
+- Added `version()` function to get the version of the package
+
 ## 0.2.3
 
 - Added `active` column to `Account` model

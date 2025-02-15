@@ -679,11 +679,11 @@ verified by mirrors that have only the tx_root.
 - balances: bytes
 - timestamp: str
 - auth_script: bytes | None
-- correspondence: RelatedModel | None
-- ledger: RelatedModel | None
+- correspondence: RelatedModel
+- ledger: RelatedModel
 - transactions: RelatedCollection
-- parent: RelatedModel | None
-- children: RelatedCollection
+- parent: RelatedModel
+- child: RelatedModel
 
 #### Properties
 
@@ -696,7 +696,7 @@ precondition check fails.
 fails.
 - parent: The related TxRollup. Setting raises TypeError if the precondition
 check fails.
-- children: The related TxRollups. Setting raises TypeError if the precondition
+- child: The related TxRollup. Setting raises TypeError if the precondition
 check fails.
 - correspondence: The related Correspondence. Setting raises TypeError if the
 precondition check fails.

@@ -92,3 +92,5 @@ def publish_migrations(
 def automigrate(migration_folder_path: str, db_file_path: str):
     """Executes the sqloquent automigrate tool."""
     sqloquent.tools.automigrate(migration_folder_path, db_file_path)
+
+del Callable
