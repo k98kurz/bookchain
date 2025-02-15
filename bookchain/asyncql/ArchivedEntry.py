@@ -28,7 +28,7 @@ class ArchivedEntry(AsyncHashedModel):
     # override automatic properties
     @property
     def type(self) -> EntryType:
-        """The EntryType of the Entry."""
+        """The EntryType of the ArchivedEntry."""
         return EntryType(self.data['type'])
     @type.setter
     def type(self, val: EntryType):
@@ -87,8 +87,8 @@ class ArchivedEntry(AsyncHashedModel):
     @classmethod
     def set_sigfield_plugin(cls, plugin: Callable):
         """Sets the plugin function used by self.get_sigfields that
-            parses the Entry to extract the correct sigfields for
-            tapescript authorization. This is an optional override.
+            parses the ArchivedEntry to extract the correct sigfields
+            for tapescript authorization. This is an optional override.
         """
         cls._plugin = plugin
 
