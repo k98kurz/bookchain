@@ -45,7 +45,7 @@ class Identity(HashedModel):
         """Get the nosto and vostro accounts for a correspondent."""
         accounts = []
         ledger: Ledger
-        for ledger in Ledger.query().get():
+        for ledger in Ledger.query().is_in('identity_id', [self.id, correspondent.id]).get():
             nostros = Account.query({
                 'ledger_id': ledger.id,
                 'type': AccountType.NOSTRO_ASSET.value,

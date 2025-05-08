@@ -45,7 +45,7 @@ class Identity(AsyncHashedModel):
         """Get the nosto and vostro accounts for a correspondent."""
         accounts = []
         ledger: Ledger
-        for ledger in await Ledger.query().get():
+        for ledger in await Ledger.query().is_in('identity_id', [self.id, correspondent.id]).get():
             nostros = await Account.query({
                 'ledger_id': ledger.id,
                 'type': AccountType.NOSTRO_ASSET.value,
