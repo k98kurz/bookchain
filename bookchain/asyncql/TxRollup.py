@@ -286,8 +286,8 @@ class TxRollup(AsyncHashedModel):
                     txru_lock = tapescript.make_multisig_lock(pubkeys, len(pubkeys)).bytes
 
             if self.auth_script is not None and txru_lock is not None:
-                authorized = tapescript.run_auth_script(
-                    self.auth_script + txru_lock,
+                authorized = tapescript.run_auth_scripts(
+                    [self.auth_script, txru_lock],
                     {'sigfield1': self.id}
                 )
 

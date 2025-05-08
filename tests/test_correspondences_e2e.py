@@ -70,8 +70,10 @@ class TestCorrespondencesE2E(unittest.TestCase):
     def setup_cryptographic_values(self):
         self.seed_alice = os.urandom(32)
         self.seed_bob = os.urandom(32)
+        self.seed_charlie = os.urandom(32)
         self.pkey_alice = bytes(SigningKey(self.seed_alice).verify_key)
         self.pkey_bob = bytes(SigningKey(self.seed_bob).verify_key)
+        self.pkey_charlie = bytes(SigningKey(self.seed_charlie).verify_key)
         self.committed_script_alice = tapescript.tools.make_delegate_key_lock(self.pkey_alice)
         self.committed_script_bob = tapescript.tools.make_delegate_key_lock(self.pkey_bob)
         self.locking_script_alice = tapescript.tools.make_taproot_lock(
@@ -84,19 +86,13 @@ class TestCorrespondencesE2E(unittest.TestCase):
         ).bytes
         self.delegate_seed = os.urandom(32) # for simplicity, both will have the same delegate
         self.delegate_pkey = bytes(SigningKey(self.delegate_seed).verify_key)
-        self.delegate_cert_alice = {
-            'pkey': self.delegate_pkey,
-            'begin_ts': int(time()) - 1,
-            'end_ts': int(time()) + 60*60*24*365
-        }
-        self.delegate_cert_bob = {**self.delegate_cert_alice}
-        self.delegate_cert_alice['sig'] = tapescript.make_delegate_key_cert_sig(
-            self.seed_alice, self.delegate_pkey, self.delegate_cert_alice['begin_ts'],
-            self.delegate_cert_alice['end_ts']
+        begin_ts = int(time()) - 1
+        end_ts = int(time()) + 60*60*24*365
+        self.delegate_cert_alice = tapescript.make_delegate_key_cert(
+            self.seed_alice, self.delegate_pkey, begin_ts, end_ts
         )
-        self.delegate_cert_bob['sig'] = tapescript.make_delegate_key_cert_sig(
-            self.seed_bob, self.delegate_pkey, self.delegate_cert_bob['begin_ts'],
-            self.delegate_cert_bob['end_ts']
+        self.delegate_cert_bob = tapescript.make_delegate_key_cert(
+            self.seed_bob, self.delegate_pkey, begin_ts, end_ts
         )
         self.multisig_lock = tapescript.tools.make_multisig_lock(
             [self.pkey_alice, self.pkey_bob], 2
@@ -237,6 +233,17 @@ class TestCorrespondencesE2E(unittest.TestCase):
         asset_entry.save()
         txn.save()
 
+        # charlie exists but shouldn't affect anything else
+        charlie: models.Identity = models.Identity.insert({
+            'name': 'Charlie',
+            'pubkey': self.pkey_charlie,
+        })
+        ledger_charlie = models.Ledger.insert({
+            'name': 'Current Ledger',
+            'identity_id': charlie.id,
+            'currency_id': currency.id,
+        })
+
         # set up Correspondence
         assert alice.correspondences().query().count() == 0
         assert len(alice.correspondents(reload=True)) == 0
@@ -329,6 +336,8 @@ class TestCorrespondencesE2E(unittest.TestCase):
         vostro_bob.save()
         cor_accts2 = bob.get_correspondent_accounts(alice)
         assert len(cor_accts2) == 4, cor_accts2
+        for acct in cor_accts2:
+            print(f"{acct.ledger_id} {acct.name} {acct.type.name}")
 
         # get correspondence accounts
         cor_accts = correspondence.get_accounts()

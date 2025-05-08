@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bookchain"
-version = "0.3.0"
+version = "0.3.1"
 authors = [
   { name="k98kurz", email="k98kurz@gmail.com" },
 ]
@@ -15,20 +15,21 @@ requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: ISC License (ISCL)",
+  "License :: Free for non-commercial use",
   "Operating System :: OS Independent",
   "Topic :: Database :: Front-Ends",
   "Topic :: Office/Business :: Financial :: Accounting",
 ]
 dependencies = [
   "sqloquent >= 0.7.0",
-  "tapescript >= 0.6.1",
+  "tapescript >= 0.7.1",
   "merkleasy >= 0.1.2",
   "packify >= 0.2.3"
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/k98kurz/bookchain"
+"Repository" = "https://github.com/k98kurz/bookchain"
 "Bug Tracker" = "https://github.com/k98kurz/bookchain/issues"
 
 [project.optional-dependencies]

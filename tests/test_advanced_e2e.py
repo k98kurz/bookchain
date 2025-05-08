@@ -68,13 +68,10 @@ class TestAdvancedE2E(unittest.TestCase):
         ).bytes
         delegate_seed = os.urandom(32)
         delegate_pkey = bytes(SigningKey(delegate_seed).verify_key)
-        delegate_cert = {
-            'pkey': delegate_pkey,
-            'begin_ts': int(time()) - 1,
-            'end_ts': int(time()) + 60*60*24*365
-        }
-        delegate_cert['sig'] = tapescript.make_delegate_key_cert_sig(
-            seed, delegate_pkey, delegate_cert['begin_ts'], delegate_cert['end_ts']
+        begin_ts = int(time()) - 1
+        end_ts = int(time()) + 60*60*24*365
+        delegate_cert = tapescript.make_delegate_key_cert(
+            seed, delegate_pkey, begin_ts, end_ts
         )
 
         # set up identity, currency, ledger, and some accounts
@@ -210,12 +207,9 @@ class TestAdvancedE2E(unittest.TestCase):
         liability_entry.id = liability_entry.generate_id(liability_entry.data)
         auth_scripts = {
             equity_acct.id: (
-                tapescript.tools.make_delegate_key_unlock(
+                tapescript.tools.make_delegate_key_witness(
                     delegate_seed,
-                    delegate_pkey,
-                    delegate_cert['begin_ts'],
-                    delegate_cert['end_ts'],
-                    delegate_cert['sig'],
+                    delegate_cert,
                     equity_entry.get_sigfields()
                 ) +
                 tapescript.tools.make_taproot_witness_scriptspend(
@@ -223,12 +217,9 @@ class TestAdvancedE2E(unittest.TestCase):
                 )
             ).bytes,
             liability_acct.id: (
-                tapescript.tools.make_delegate_key_unlock(
+                tapescript.tools.make_delegate_key_witness(
                     delegate_seed,
-                    delegate_pkey,
-                    delegate_cert['begin_ts'],
-                    delegate_cert['end_ts'],
-                    delegate_cert['sig'],
+                    delegate_cert,
                     liability_entry.get_sigfields()
                 ) +
                 tapescript.tools.make_taproot_witness_scriptspend(

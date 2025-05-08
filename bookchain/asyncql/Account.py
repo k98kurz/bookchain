@@ -3,7 +3,7 @@ from sqloquent.asyncql import (
     AsyncHashedModel, AsyncRelatedModel, AsyncRelatedCollection,
     AsyncQueryBuilderProtocol, Default
 )
-from tapescript import run_auth_script, Script
+from tapescript import run_auth_scripts, Script
 from .AccountType import AccountType
 from .Entry import Entry
 from .EntryType import EntryType
@@ -160,4 +160,4 @@ class Account(AsyncHashedModel):
         locking_script = self.locking_scripts.get(entry_type, b'')
         if type(auth_script) is Script:
             auth_script = auth_script.bytes
-        return run_auth_script(auth_script + locking_script, cache, contracts)
+        return run_auth_scripts([auth_script, locking_script], cache, contracts)

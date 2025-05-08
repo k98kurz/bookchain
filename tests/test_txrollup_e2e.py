@@ -91,19 +91,13 @@ class TestTxRollupE2E(unittest.TestCase):
         ).bytes
         self.delegate_seed = os.urandom(32) # for simplicity, both will have the same delegate
         self.delegate_pkey = bytes(SigningKey(self.delegate_seed).verify_key)
-        self.delegate_cert_alice = {
-            'pkey': self.delegate_pkey,
-            'begin_ts': int(time()) - 1,
-            'end_ts': int(time()) + 60*60*24*365
-        }
-        self.delegate_cert_bob = {**self.delegate_cert_alice}
-        self.delegate_cert_alice['sig'] = tapescript.make_delegate_key_cert_sig(
-            self.seed_alice, self.delegate_pkey, self.delegate_cert_alice['begin_ts'],
-            self.delegate_cert_alice['end_ts']
+        begin_ts = int(time()) - 1
+        end_ts = int(time()) + 60*60*24*365
+        self.delegate_cert_alice = tapescript.make_delegate_key_cert(
+            self.seed_alice, self.delegate_pkey, begin_ts, end_ts
         )
-        self.delegate_cert_bob['sig'] = tapescript.make_delegate_key_cert_sig(
-            self.seed_bob, self.delegate_pkey, self.delegate_cert_bob['begin_ts'],
-            self.delegate_cert_bob['end_ts']
+        self.delegate_cert_bob = tapescript.make_delegate_key_cert(
+            self.seed_bob, self.delegate_pkey, begin_ts, end_ts
         )
         self.multisig_lock = tapescript.tools.make_multisig_lock(
             [self.pkey_alice, self.pkey_bob], 2
