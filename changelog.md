@@ -1,3 +1,8 @@
+## 0.3.1
+
+- Updated tapescript dependency to 0.7.1
+- Slightly improved `Identity.get_correspondent_accounts`
+
 ## 0.3.0
 
 - Updated `Correspondence`:

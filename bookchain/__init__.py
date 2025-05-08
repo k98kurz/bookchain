@@ -21,7 +21,7 @@ from typing import Callable
 import sqloquent.tools
 
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 def version() -> str:
     """Returns the version of the bookchain package."""
