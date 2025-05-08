@@ -117,7 +117,7 @@ use.)
 ### Cryptographic audit trail
 
 Models inherit from `sqloquent.HashedModel`, so all data is hashed into the ID,
-guaranteeing a unique, deterministic ID for each unique model.
+guaranteeing a unique, deterministic ID for each unique record.
 
 Whenever something is deleted, it will be encoded and inserted into the
 `deleted_models` table to maintain an audit trail.
