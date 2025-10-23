@@ -1,4 +1,5 @@
 from context import models, bookchain, asyncql
+from decimal import Decimal
 from genericpath import isfile
 from sqlite3 import OperationalError
 from time import time
@@ -62,8 +63,11 @@ class TestMisc(unittest.TestCase):
             'unit_divisions': 1,
         })
 
+        amount = Decimal('1.23')
         assert currency.format(123) == '$1.23', currency.format(123)
-        assert currency.get_units(123) == (1, 23)
+        assert currency.get_units(123) == (1, 23), currency.get_units(123)
+        assert currency.to_decimal(123) == amount, currency.to_decimal(123)
+        assert currency.from_decimal(amount) == 123, currency.from_decimal(amount)
 
         currency = models.Currency({
             'name': 'Mean Minute/Hour',
@@ -74,9 +78,17 @@ class TestMisc(unittest.TestCase):
         })
 
         assert currency.format(60*60*1.23) == 'Ħ1.23', currency.format(60*60*1.23)
-        assert currency.get_units((60**2)*2 + (60**1)*2 + (60**0)*3) == (2, 2, 3)
         assert currency.format(60*60 + 45, decimal_places=2) == 'Ħ1.01', \
             currency.format(60*60 + 45, decimal_places=2)
+        assert currency.to_decimal(5011) == Decimal(5011)/Decimal(60*60)
+
+        amount = (60**2)*2 + (60**1)*2 + (60**0)*3
+        assert currency.get_units(amount) == (2, 2, 3)
+        assert currency.format(amount, use_decimal=False, divider=':') == 'Ħ02:02:03', \
+            currency.format(amount, use_decimal=False, divider=':')
+
+        amount = Decimal('1.51')
+        assert currency.from_decimal(amount) == 5436, currency.from_decimal(amount)
 
     def test_asyncql_currency(self):
         currency = asyncql.Currency({
@@ -87,8 +99,11 @@ class TestMisc(unittest.TestCase):
             'unit_divisions': 1,
         })
 
+        amount = Decimal('1.23')
         assert currency.format(123) == '$1.23', currency.format(123)
         assert currency.get_units(123) == (1, 23), currency.get_units(123)
+        assert currency.to_decimal(123) == amount, currency.to_decimal(123)
+        assert currency.from_decimal(amount) == 123, currency.from_decimal(amount)
 
         currency = asyncql.Currency({
             'name': 'Mean Minute/Hour',
@@ -99,9 +114,17 @@ class TestMisc(unittest.TestCase):
         })
 
         assert currency.format(60*60*1.23) == 'Ħ1.23', currency.format(60*60*1.23)
-        assert currency.get_units((60**2)*2 + (60**1)*2 + (60**0)*3) == (2, 2, 3)
         assert currency.format(60*60 + 45, decimal_places=2) == 'Ħ1.01', \
             currency.format(60*60 + 45, decimal_places=2)
+        assert currency.to_decimal(5011) == Decimal(5011)/Decimal(60*60)
+
+        amount = (60**2)*2 + (60**1)*2 + (60**0)*3
+        assert currency.get_units(amount) == (2, 2, 3)
+        assert currency.format(amount, use_decimal=False, divider=':') == 'Ħ02:02:03', \
+            currency.format(amount, use_decimal=False, divider=':')
+
+        amount = Decimal('1.51')
+        assert currency.from_decimal(amount) == 5436, currency.from_decimal(amount)
 
     def test_publish_migrations(self):
         assert len(os.listdir(MIGRATIONS_PATH)) < 2, os.listdir(MIGRATIONS_PATH)
