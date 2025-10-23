@@ -49,7 +49,7 @@ class Transaction(HashedModel):
     @property
     def auth_scripts(self) -> dict[str, bytes]:
         """A dict mapping account IDs to tapescript unlocking script bytes."""
-        return packify.unpack(self.data.get('auth_scripts', b'd\x00\x00\x00\x00'))
+        return packify.unpack(self.data.get('auth_scripts', b'M@\x00'))
     @auth_scripts.setter
     def auth_scripts(self, val: dict[str, bytes]):
         if type(val) is not dict:

@@ -22,6 +22,7 @@ Identity.ledgers = async_has_many(Identity, Ledger, 'identity_id')
 Ledger.owner = async_belongs_to(Ledger, Identity, 'identity_id')
 
 Ledger.currency = async_belongs_to(Ledger, Currency, 'currency_id')
+Currency.ledgers = async_has_many(Currency, Ledger, 'currency_id')
 
 Correspondence.ledgers = async_contains(Correspondence, Ledger, 'ledger_ids')
 
@@ -46,11 +47,11 @@ Transaction.entries = async_contains(Transaction, Entry, 'entry_ids')
 Transaction.ledgers = async_contains(Transaction, Ledger, 'ledger_ids')
 Ledger.transactions = async_within(Ledger, Transaction, 'ledger_ids')
 
-TxRollup.transactions = async_contains(TxRollup, Transaction, 'tx_ids')
-Transaction.rollups = async_within(Transaction, TxRollup, 'tx_ids')
-
 TxRollup.ledger = async_belongs_to(TxRollup, Ledger, 'ledger_id')
 Ledger.rollups = async_within(Ledger, TxRollup, 'ledger_id')
+
+TxRollup.transactions = async_contains(TxRollup, Transaction, 'tx_ids')
+Transaction.rollups = async_within(Transaction, TxRollup, 'tx_ids')
 
 TxRollup.parent = async_belongs_to(TxRollup, TxRollup, 'parent_id')
 TxRollup.child = async_has_one(TxRollup, TxRollup, 'parent_id')

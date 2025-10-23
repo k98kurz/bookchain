@@ -35,7 +35,7 @@ class Transaction(AsyncHashedModel):
     @property
     def details(self) -> dict[str, bytes]:
         """A packify.SerializableType stored in the database as a blob."""
-        return packify.unpack(self.data.get('details', b'd\x00\x00\x00\x00'))
+        return packify.unpack(self.data.get('details', b'M@\x00'))
     @details.setter
     def details(self, val: dict[str, bytes]):
         if type(val) is not dict:
@@ -47,7 +47,7 @@ class Transaction(AsyncHashedModel):
     @property
     def auth_scripts(self) -> dict[str, bytes]:
         """A dict mapping account IDs to tapescript unlocking script bytes."""
-        return packify.unpack(self.data.get('auth_scripts', b'd\x00\x00\x00\x00'))
+        return packify.unpack(self.data.get('auth_scripts', b'M@\x00'))
     @auth_scripts.setter
     def auth_scripts(self, val: dict[str, bytes]):
         if type(val) is not dict:

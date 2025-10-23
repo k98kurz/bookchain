@@ -53,7 +53,7 @@ class Account(AsyncHashedModel):
         return {
             EntryType(k): v
             for k,v in packify.unpack(
-                self.data.get('locking_scripts', None) or b'd\x00\x00\x00\x00'
+                self.data.get('locking_scripts', None) or b'M@\x00'
             ).items()
         }
     @locking_scripts.setter
@@ -69,7 +69,7 @@ class Account(AsyncHashedModel):
     @property
     def details(self) -> packify.SerializableType:
         """A packify.SerializableType stored in the database as a blob."""
-        return packify.unpack(self.data.get('details', None) or b'n\x00\x00\x00\x00')
+        return packify.unpack(self.data.get('details', None) or b'\x00')
     @details.setter
     def details(self, val: packify.SerializableType):
         if isinstance(val, packify.SerializableType):
