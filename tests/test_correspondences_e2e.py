@@ -286,6 +286,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
         assert bob.correspondences().query().count() == 1
         assert len(bob.correspondents(reload=True)) == 1
         assert bob.correspondents()[0].id == alice.id
+        assert len(correspondence.ledgers)
 
         # set up correspondent accounts for alice
         cor_accts1 = alice.get_correspondent_accounts(bob)
