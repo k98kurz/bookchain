@@ -7,6 +7,7 @@
     - Updated `format` method to include non-decimal formatting,
       e.g. 'H00:00:00'
 - Improved documentation for `TxRollup.prepare`
+- Updated 'Correspondence': added missing '.ledgers' relation
 
 ## 0.3.1
 
