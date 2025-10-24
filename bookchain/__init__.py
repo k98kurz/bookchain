@@ -7,6 +7,7 @@ from .models import (
     Correspondence,
     Currency,
     Customer,
+    DeletedModel,
     Entry,
     EntryType,
     Identity,
