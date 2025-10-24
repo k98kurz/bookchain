@@ -1,3 +1,13 @@
+## 0.3.2
+
+- Updated tapescript to 0.7.2
+- Updated packify to 0.3.1 and applied compatibility patches
+- Updated `Currency`:
+    - Added `from_decimal` method
+    - Updated `format` method to include non-decimal formatting,
+      e.g. 'H00:00:00'
+- Improved documentation for `TxRollup.prepare`
+
 ## 0.3.1
 
 - Updated tapescript dependency to 0.7.1
