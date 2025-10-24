@@ -246,6 +246,11 @@ class TestCorrespondencesE2E(unittest.TestCase):
             'currency_id': currency.id,
         }))
 
+        # test empty Correspondence
+        (asyncql.Correspondence()).details
+        (asyncql.Correspondence()).signatures
+        (asyncql.Correspondence()).txru_lock
+
         # set up Correspondence
         assert run(alice.correspondences().query().count()) == 0
         assert len(run(alice.correspondents(reload=True))) == 0

@@ -25,7 +25,7 @@ class Correspondence(AsyncHashedModel):
     @property
     def details(self) -> dict:
         """Returns the details of the correspondence as a dict."""
-        return packify.unpack(self.data.get('details', b'd\x00\x00\x00\x00'))
+        return packify.unpack(self.data.get('details', b'M@\x00'))
     @details.setter
     def details(self, val: dict):
         """Sets the details of the correspondence as a dict. Raises
@@ -39,7 +39,7 @@ class Correspondence(AsyncHashedModel):
         """Returns the signatures of the correspondences as a dict
             mapping Identity ID to bytes signature.
         """
-        return packify.unpack(self.data.get('signatures', b'd\x00\x00\x00\x00'))
+        return packify.unpack(self.data.get('signatures', b'M@\x00'))
     @signatures.setter
     def signatures(self, val: dict[str, bytes]):
         """Sets the signatures of the correspondences as a dict
@@ -56,7 +56,7 @@ class Correspondence(AsyncHashedModel):
         self.data['signatures'] = packify.pack(val)
 
     @property
-    def txru_lock(self) -> bytes:
+    def txru_lock(self) -> bytes|None:
         """Returns the txru_lock directly from the details field."""
         return self.details.get('txru_lock', None)
 

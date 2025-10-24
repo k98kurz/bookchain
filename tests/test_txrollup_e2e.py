@@ -299,6 +299,10 @@ class TestTxRollupE2E(unittest.TestCase):
         assert equity_acct.balance() == equity_starting_balance + 300, \
             f'{equity_acct.balance()} != {equity_starting_balance} + 300'
 
+        # test empty txrollup
+        (models.TxRollup()).balances
+        (models.TxRollup()).tx_ids
+
         # create a txrollup
         txrollup = models.TxRollup.prepare([txn1, txn2])
         assert txrollup.validate()
@@ -309,6 +313,11 @@ class TestTxRollupE2E(unittest.TestCase):
         assert txrollup.verify_txn_inclusion_proof(txn1.id, proof)
         proof = txrollup.prove_txn_inclusion(txn2.id)
         assert txrollup.verify_txn_inclusion_proof(txn2.id, proof)
+
+        # test empty ArchivedTransaction and ArchivedEntry
+        (models.ArchivedTransaction()).details
+        (models.ArchivedTransaction()).auth_scripts
+        (models.ArchivedEntry()).details
 
         # archive and trim txn and entries
         assert txrollup.trim() == 2

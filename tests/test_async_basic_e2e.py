@@ -59,6 +59,9 @@ class TestAsyncBasicE2E(unittest.TestCase):
         self.automigrate()
         assert run(asyncql.Account.query().count()) == 0
 
+        # test empty Transaction
+        (asyncql.Transaction()).details
+        (asyncql.Transaction()).auth_scripts
         assert not run(asyncql.Transaction().validate())
 
         # setup account categories
@@ -134,6 +137,9 @@ class TestAsyncBasicE2E(unittest.TestCase):
         run(liability_acct.children().reload())
         assert len(liability_acct.children) == 1
         assert liability_acct.children[0].id == liability_sub_acct.id
+
+        # test empty Entry
+        (asyncql.Entry()).details
 
         # prepare and save a valid transaction
         txn_nonce = os.urandom(16)

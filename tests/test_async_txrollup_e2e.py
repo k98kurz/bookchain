@@ -301,6 +301,11 @@ class TestTxRollupE2E(unittest.TestCase):
         assert run(equity_acct.balance()) == equity_starting_balance + 300, \
             f'{run(equity_acct.balance())} != {equity_starting_balance} + 300'
 
+        # test empty txrollup
+        txrollup = asyncql.TxRollup()
+        txrollup.balances
+        txrollup.tx_ids
+
         # create a txrollup
         txrollup = run(asyncql.TxRollup.prepare([txn1, txn2]))
         assert run(txrollup.validate())
@@ -311,6 +316,12 @@ class TestTxRollupE2E(unittest.TestCase):
         assert txrollup.verify_txn_inclusion_proof(txn1.id, proof)
         proof = txrollup.prove_txn_inclusion(txn2.id)
         assert txrollup.verify_txn_inclusion_proof(txn2.id, proof)
+
+        # test empty ArchivedTransaction and ArchivedEntry
+        
+        (asyncql.ArchivedTransaction()).details
+        (asyncql.ArchivedTransaction()).auth_scripts
+        (asyncql.ArchivedEntry()).details
 
         # archive and trim txn and entries
         assert run(txrollup.trim()) == 2

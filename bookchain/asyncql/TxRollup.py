@@ -74,7 +74,10 @@ class TxRollup(AsyncHashedModel):
 
     @property
     def tx_ids(self) -> list[str]:
-        """A list of transaction IDs."""
+        """A list of transaction IDs. Setting causes the ids to be
+            sorted, then combined into a Merkle Tree, the root of which
+            is used to set `self.tx_root`.
+        """
         return self.data.get('tx_ids', '').split(',')
     @tx_ids.setter
     def tx_ids(self, val: list[str]):
@@ -93,7 +96,7 @@ class TxRollup(AsyncHashedModel):
     @property
     def balances(self) -> dict[str, tuple[EntryType, int]]:
         """A dict mapping account IDs to tuple[EntryType, int] balances."""
-        balances: dict = packify.unpack(self.data.get('balances', b'd\x00\x00\x00\x00'))
+        balances: dict = packify.unpack(self.data.get('balances', b'M@\x00'))
         return {
             k: (EntryType(v[0]), v[1])
             for k, v in balances.items()
@@ -174,7 +177,9 @@ class TxRollup(AsyncHashedModel):
             if the parent TxRollup already has a child, or if there are
             no txns and no ledger or correspondence is provided, or if
             a TxRollup chain already exists for the given ledger or
-            correspondence when no parent is provided.
+            correspondence when no parent is provided. The Transaction
+            IDs are sorted and combined into a Merkle Tree, the root of
+            which is used to set the `tx_root` property.
         """
         tert(all([type(t) is Transaction for t in txns]),
             'txns must be a list of Transaction objects')

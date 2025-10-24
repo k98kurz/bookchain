@@ -38,7 +38,7 @@ class Entry(HashedModel):
     @property
     def details(self) -> packify.SerializableType:
         """A packify.SerializableType stored in the database as a blob."""
-        return packify.unpack(self.data.get('details', b'n\x00\x00\x00\x00'))
+        return packify.unpack(self.data.get('details', b'M@\x00'))
     @details.setter
     def details(self, val: packify.SerializableType):
         self.data['details'] = packify.pack(val)
