@@ -521,12 +521,22 @@ Validate the transaction, save the entries, then save the transaction.
 - fx_symbol: str | None
 - unit_divisions: <class 'int'>
 - base: int | None
+- ledgers: <class 'sqloquent.asyncql.interfaces.AsyncRelatedCollection'>
+
+#### Properties
+
+- ledgers: The related Ledgers. Setting raises TypeError if the precondition
+check fails.
 
 #### Methods
 
 ##### `to_decimal(amount: int) -> Decimal:`
 
 Convert the amount into a Decimal representation.
+
+##### `from_decimal(amount: Decimal) -> int:`
+
+Convert the amount from a Decimal representation.
 
 ##### `get_units(amount: int) -> tuple[int]:`
 
@@ -535,9 +545,13 @@ unit_divisions; e.g. if base=10 and unit_divisions=2, get_units(200) will return
 (2, 0, 0); if base=60 and unit_divisions=2, get_units(200) will return (0, 3,
 20).
 
-##### `format(amount: int, /, *, use_fx_symbol: bool = False, use_postfix: bool = False, use_prefix: bool = True, decimal_places: int = 2) -> str:`
+##### `format(amount: int, /, *, divider: str = '.', use_fx_symbol: bool = False, use_postfix: bool = False, use_prefix: bool = True, decimal_places: int = 2, use_decimal: bool = True) -> str:`
 
-Format an amount using the correct number of decimal_places.
+Format an amount using the correct number of `decimal_places`. If `use_decimal`
+is `False`, instead the unit subdivisions from `get_units` will be combined
+using the `divider` char, and each part will be prefix padded with 0s to reach
+the `decimal_places`. E.g. `.format(200, use_decimal=False, divider=':') ==
+'02:00'` for a Currency with `base=100` and `unit_divisions=1`.
 
 ### `Customer(AsyncHashedModel)`
 
@@ -677,13 +691,14 @@ verified by mirrors that have only the tx_root.
 
 #### Properties
 
-- tx_ids: A list of transaction IDs.
+- tx_ids: A list of transaction IDs. Setting causes the ids to be sorted, then
+combined into a Merkle Tree, the root of which is used to set `self.tx_root`.
 - balances: A dict mapping account IDs to tuple[EntryType, int] balances.
 - tree: A merkle tree of the transaction IDs.
-- transactions: The related Transactions. Setting raises TypeError if the
-precondition check fails.
 - ledger: The related Ledger. Setting raises TypeError if the precondition check
 fails.
+- transactions: The related Transactions. Setting raises TypeError if the
+precondition check fails.
 - parent: The related TxRollup. Setting raises TypeError if the precondition
 check fails.
 - child: The related TxRollup. Setting raises TypeError if the precondition
@@ -721,7 +736,8 @@ if any txns are not for accounts of the given correspondence or of the same
 ledger if no correspondence is provided, or if the parent TxRollup already has a
 child, or if there are no txns and no ledger or correspondence is provided, or
 if a TxRollup chain already exists for the given ledger or correspondence when
-no parent is provided.
+no parent is provided. The Transaction IDs are sorted and combined into a Merkle
+Tree, the root of which is used to set the `tx_root` property.
 
 ##### `async validate(reload: bool = False) -> bool:`
 
@@ -739,13 +755,13 @@ valid.
 
 ##### `trimmed_transactions() -> AsyncSqlQueryBuilder:`
 
-Returns a query builder for DeletedModels containing the trimmed transactions
-committed to in this tx rollup.
+Returns a query builder for AsyncDeletedModels containing the trimmed
+transactions committed to in this tx rollup.
 
 ##### `async trimmed_entries() -> AsyncSqlQueryBuilder:`
 
-Returns a query builder for DeletedModels containing the trimmed entries from
-trimmed transactions committed to in this tx rollup.
+Returns a query builder for AsyncDeletedModels containing the trimmed entries
+from trimmed transactions committed to in this tx rollup.
 
 ##### `archived_transactions() -> AsyncSqlQueryBuilder:`
 

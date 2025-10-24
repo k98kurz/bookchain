@@ -370,15 +370,15 @@ class TxRollup(AsyncHashedModel):
         return len(txns)
 
     def trimmed_transactions(self) -> AsyncSqlQueryBuilder:
-        """Returns a query builder for DeletedModels containing the trimmed
-            transactions committed to in this tx rollup.
+        """Returns a query builder for AsyncDeletedModels containing the
+            trimmed transactions committed to in this tx rollup.
         """
         return AsyncDeletedModel.query({'model_class': Transaction.__name__}).is_in(
             'record_id', self.tx_ids
         )
 
     async def trimmed_entries(self) -> AsyncSqlQueryBuilder:
-        """Returns a query builder for DeletedModels containing the
+        """Returns a query builder for AsyncDeletedModels containing the
             trimmed entries from trimmed transactions committed to in
             this tx rollup.
         """
