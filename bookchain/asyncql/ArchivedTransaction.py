@@ -8,24 +8,31 @@ from .Identity import Identity
 import packify
 
 
+_empty_dict = packify.pack({})
+
+
 class ArchivedTransaction(AsyncHashedModel):
     """Optional class for storing a trimmed Transaction after is has
         included in a TxRollup. This allows accessing the trimmed
         Transaction details more efficiently than by loading the
-        DeletedModel that contains the trimmed Transaction. Must be used
-        in conjunction with ArchivedEntry.
+        AsyncDeletedModel that contains the trimmed Transaction. Must be
+        used in conjunction with ArchivedEntry.
     """
     connection_info: str = ''
     table: str = 'archived_transactions'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'entry_ids', 'ledger_ids', 'timestamp', 'details', 'auth_scripts')
-    columns_excluded_from_hash: tuple[str] = ('auth_scripts',)
+    columns: tuple[str] = (
+        'id', 'entry_ids', 'ledger_ids', 'timestamp', 'details', 'auth_scripts',
+        'description',
+    )
+    columns_excluded_from_hash: tuple[str] = ('auth_scripts', 'description',)
     id: str
     entry_ids: str
     ledger_ids: str
     timestamp: str
     details: bytes
     auth_scripts: bytes
+    description: str|None
     entries: AsyncRelatedCollection
     ledgers: AsyncRelatedCollection
 
@@ -33,7 +40,7 @@ class ArchivedTransaction(AsyncHashedModel):
     @property
     def details(self) -> dict[str, bytes]:
         """A packify.SerializableType stored in the database as a blob."""
-        return packify.unpack(self.data.get('details', b'M@\x00'))
+        return packify.unpack(self.data.get('details', _empty_dict))
     @details.setter
     def details(self, val: dict[str, bytes]):
         if type(val) is not dict:
@@ -45,7 +52,7 @@ class ArchivedTransaction(AsyncHashedModel):
     @property
     def auth_scripts(self) -> dict[str, bytes]:
         """A dict mapping account IDs to tapescript unlocking script bytes."""
-        return packify.unpack(self.data.get('auth_scripts', b'M@\x00'))
+        return packify.unpack(self.data.get('auth_scripts', _empty_dict))
     @auth_scripts.setter
     def auth_scripts(self, val: dict[str, bytes]):
         if type(val) is not dict:

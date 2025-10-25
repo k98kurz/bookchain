@@ -8,15 +8,19 @@ from .EntryType import EntryType
 import packify
 
 
+_empty_dict = packify.pack({})
+_None = packify.pack(None)
+
+
 class Account(HashedModel):
     connection_info: str = ''
     table: str = 'accounts'
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'name', 'type', 'ledger_id', 'parent_id', 'code',
-        'locking_scripts', 'category_id', 'details', 'active'
+        'locking_scripts', 'category_id', 'details', 'active', 'description'
     )
-    columns_excluded_from_hash = ('active',)
+    columns_excluded_from_hash: tuple[str] = ('active', 'description',)
     id: str
     name: str
     type: str
@@ -27,6 +31,7 @@ class Account(HashedModel):
     category_id: str|None
     details: bytes|None
     active: bool|Default[True]
+    description: str|None
     ledger: RelatedModel
     parent: RelatedModel
     category: RelatedModel
@@ -51,7 +56,7 @@ class Account(HashedModel):
         return {
             EntryType(k): v
             for k,v in packify.unpack(
-                self.data.get('locking_scripts', None) or b'M@\x00'
+                self.data.get('locking_scripts', None) or _empty_dict
             ).items()
         }
     @locking_scripts.setter
@@ -67,7 +72,7 @@ class Account(HashedModel):
     @property
     def details(self) -> packify.SerializableType:
         """A packify.SerializableType stored in the database as a blob."""
-        return packify.unpack(self.data.get('details', None) or b'\x00')
+        return packify.unpack(self.data.get('details', None) or _None)
     @details.setter
     def details(self, val: packify.SerializableType):
         if isinstance(val, packify.SerializableType):

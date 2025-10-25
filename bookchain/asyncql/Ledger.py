@@ -11,12 +11,16 @@ class Ledger(AsyncHashedModel):
     connection_info: str = ''
     table: str = 'ledgers'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'name', 'type', 'identity_id', 'currency_id')
+    columns: tuple[str] = (
+        'id', 'name', 'type', 'identity_id', 'currency_id', 'description'
+    )
+    columns_excluded_from_hash: tuple[str] = ('description',)
     id: str
     name: str
     type: str
     identity_id: str
     currency_id: str
+    description: str|None
     owner: AsyncRelatedModel
     currency: AsyncRelatedModel
     accounts: AsyncRelatedCollection

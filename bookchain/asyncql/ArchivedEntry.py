@@ -7,6 +7,9 @@ from typing import Callable
 import packify
 
 
+_empty_dict = packify.pack({})
+
+
 class ArchivedEntry(AsyncHashedModel):
     """Optional class for storing the trimmed Entries connected to an
         ArchivedTransaction. Must be used in conjunction with
@@ -15,13 +18,17 @@ class ArchivedEntry(AsyncHashedModel):
     connection_info: str = ''
     table: str = 'archived_entries'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'type', 'amount', 'nonce', 'account_id', 'details')
+    columns: tuple[str] = (
+        'id', 'type', 'amount', 'nonce', 'account_id', 'details', 'description'
+    )
+    columns_excluded_from_hash: tuple[str] = ('description',)
     id: str
     type: str
     amount: int
     nonce: bytes
     account_id: str
     details: bytes
+    description: str|None
     account: AsyncRelatedModel
     transactions: AsyncRelatedCollection
 
@@ -43,7 +50,7 @@ class ArchivedEntry(AsyncHashedModel):
     @property
     def details(self) -> packify.SerializableType:
         """A packify.SerializableType stored in the database as a blob."""
-        return packify.unpack(self.data.get('details', b'M@\x00'))
+        return packify.unpack(self.data.get('details', _empty_dict))
     @details.setter
     def details(self, val: packify.SerializableType):
         self.data['details'] = packify.pack(val)

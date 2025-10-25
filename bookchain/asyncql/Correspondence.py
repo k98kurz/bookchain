@@ -8,16 +8,33 @@ from sqloquent.errors import vert, tert
 import packify
 
 
+_empty_dict = packify.pack({})
+
+
 class Correspondence(AsyncHashedModel):
+    """A Correspondence is a typically bilateral credit arrangement in
+        which two Identities transact with each other using Nostro and
+        Vostro accounts on their Ledgers, where the Nostro asset account
+        on one Identity's Ledger corresponds to the Vostro liability
+        account on the other Identity's Ledger. A transfer takes the
+        form of a Transaction with four Entries: one debiting (deducting
+        from) the Equity account of the payer; one crediting the Nostro
+        or Vostro account on the payer's Ledger; one debiting the Nostro
+        or Vostro account on the payee's Ledger; and one crediting the
+        Equity account of the payee.
+    """
     table: str = 'correspondences'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'identity_ids', 'ledger_ids', 'details', 'signatures')
-    columns_excluded_from_hash: tuple[str] = ('signatures')
+    columns: tuple[str] = (
+        'id', 'identity_ids', 'ledger_ids', 'details', 'signatures', 'description'
+    )
+    columns_excluded_from_hash: tuple[str] = ('signatures', 'description')
     id: str
     identity_ids: str
     ledger_ids: str
     details: bytes
     signatures: bytes|None
+    description: str|None
     identities: AsyncRelatedCollection
     ledgers: AsyncRelatedCollection
     rollups: AsyncRelatedCollection
@@ -25,7 +42,7 @@ class Correspondence(AsyncHashedModel):
     @property
     def details(self) -> dict:
         """Returns the details of the correspondence as a dict."""
-        return packify.unpack(self.data.get('details', b'M@\x00'))
+        return packify.unpack(self.data.get('details', _empty_dict))
     @details.setter
     def details(self, val: dict):
         """Sets the details of the correspondence as a dict. Raises
@@ -39,7 +56,7 @@ class Correspondence(AsyncHashedModel):
         """Returns the signatures of the correspondences as a dict
             mapping Identity ID to bytes signature.
         """
-        return packify.unpack(self.data.get('signatures', b'M@\x00'))
+        return packify.unpack(self.data.get('signatures', _empty_dict))
     @signatures.setter
     def signatures(self, val: dict[str, bytes]):
         """Sets the signatures of the correspondences as a dict

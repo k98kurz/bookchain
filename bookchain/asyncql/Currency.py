@@ -8,8 +8,9 @@ class Currency(AsyncHashedModel):
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'name', 'prefix_symbol', 'postfix_symbol',
-        'fx_symbol', 'unit_divisions', 'base', 'details'
+        'fx_symbol', 'unit_divisions', 'base', 'details', 'description'
     )
+    columns_excluded_from_hash: tuple[str] = ('description',)
     id: str
     name: str
     prefix_symbol: str|None
@@ -18,7 +19,20 @@ class Currency(AsyncHashedModel):
     unit_divisions: int
     base: int|None
     details: str|None
+    description: str|None
     ledgers: AsyncRelatedCollection
+
+    # override automatic property
+    @property
+    def details(self) -> str|None:
+        """A string stored in the database as text. Note that this will
+            be changed to a packify.SerializableType stored as a blob in
+            0.4.0.
+        """
+        return self.data.get('details', None)
+    @details.setter
+    def details(self, val: str|None):
+        self.data['details'] = val
 
     def to_decimal(self, amount: int) -> Decimal:
         """Convert the amount into a Decimal representation."""
@@ -94,4 +108,3 @@ class Currency(AsyncHashedModel):
             return f"{self.prefix_symbol}{amount}"
 
         return amount
-

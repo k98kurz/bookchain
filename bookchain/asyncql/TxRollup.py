@@ -17,6 +17,9 @@ import packify
 import tapescript
 
 
+_empty_dict = packify.pack({})
+
+
 class TxRollup(AsyncHashedModel):
     """A Transaction Roll-up is a collection of Transactions that have
         been consolidated: the IDs of the committed Transactions are the
@@ -44,9 +47,9 @@ class TxRollup(AsyncHashedModel):
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'height', 'parent_id', 'tx_ids', 'tx_root', 'correspondence_id',
-        'ledger_id', 'balances', 'timestamp', 'auth_script'
+        'ledger_id', 'balances', 'timestamp', 'auth_script', 'description'
     )
-    columns_excluded_from_hash: tuple[str] = ('tx_ids', 'auth_script')
+    columns_excluded_from_hash: tuple[str] = ('tx_ids', 'auth_script', 'description')
     id: str
     height: int
     parent_id: str|None
@@ -57,6 +60,7 @@ class TxRollup(AsyncHashedModel):
     balances: bytes
     timestamp: str
     auth_script: bytes|None
+    description: str|None
     correspondence: AsyncRelatedModel
     ledger: AsyncRelatedModel
     transactions: AsyncRelatedCollection
@@ -96,7 +100,7 @@ class TxRollup(AsyncHashedModel):
     @property
     def balances(self) -> dict[str, tuple[EntryType, int]]:
         """A dict mapping account IDs to tuple[EntryType, int] balances."""
-        balances: dict = packify.unpack(self.data.get('balances', b'M@\x00'))
+        balances: dict = packify.unpack(self.data.get('balances', _empty_dict))
         return {
             k: (EntryType(v[0]), v[1])
             for k, v in balances.items()

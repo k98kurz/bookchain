@@ -8,6 +8,9 @@ from sqloquent.errors import tert, vert
 import packify
 
 
+_empty_dict = packify.pack({})
+
+
 class Correspondence(HashedModel):
     """A Correspondence is a typically bilateral credit arrangement in
         which two Identities transact with each other using Nostro and
@@ -22,13 +25,17 @@ class Correspondence(HashedModel):
     """
     table: str = 'correspondences'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'identity_ids', 'ledger_ids', 'details', 'signatures')
-    columns_excluded_from_hash: tuple[str] = ('signatures')
+    columns: tuple[str] = (
+        'id', 'identity_ids', 'ledger_ids', 'details', 'signatures',
+        'description'
+    )
+    columns_excluded_from_hash: tuple[str] = ('signatures', 'description')
     id: str
     identity_ids: str
     ledger_ids: str
     details: bytes
     signatures: bytes|None
+    description: str|None
     identities: RelatedCollection
     ledgers: RelatedCollection
     rollups: RelatedCollection
@@ -36,7 +43,7 @@ class Correspondence(HashedModel):
     @property
     def details(self) -> dict:
         """Returns the details of the correspondence as a dict."""
-        return packify.unpack(self.data.get('details', b'M@\x00'))
+        return packify.unpack(self.data.get('details', _empty_dict))
     @details.setter
     def details(self, val: dict):
         """Sets the details of the correspondence as a dict. Raises
@@ -50,7 +57,7 @@ class Correspondence(HashedModel):
         """Returns the signatures of the correspondences as a dict
             mapping Identity ID to bytes signature.
         """
-        return packify.unpack(self.data.get('signatures', b'M@\x00'))
+        return packify.unpack(self.data.get('signatures', _empty_dict))
     @signatures.setter
     def signatures(self, val: dict[str, bytes]):
         """Sets the signatures of the correspondences as a dict
