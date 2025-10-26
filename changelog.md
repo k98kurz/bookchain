@@ -1,3 +1,27 @@
+## 0.3.3
+
+- Added text `description` column to the following models:
+  - `Account`
+  - `ArchivedEntry`
+  - `ArchivedTransaction`
+  - `Correspondence`
+  - `Currency`
+  - `Customer`
+  - `Entry`
+  - `Identity`
+  - `Ledger`
+  - `Transaction`
+  - `TxRollup`
+  - `Vendor`
+- Corrected `Customer` and `Vendor`: `details` column was incorrectly handled as
+  a packify.SerializableType stored as a blob, but the column type was text.
+  This has been corrected, and a note has been added to the documentation to
+  indicate that this will be changed to a packify.SerializableType stored as a
+  blob in 0.4.0.
+- Replaced hard-coded default `packify` serialized values with dynamically
+  calculated ones across all models
+- Small improvements to some documentation
+
 ## 0.3.2
 
 - Updated tapescript to 0.7.2
