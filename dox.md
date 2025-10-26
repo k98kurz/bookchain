@@ -25,6 +25,7 @@
 - locking_scripts: bytes | None
 - category_id: str | None
 - active: bool | Default[True]
+- description: str | None
 - ledger: RelatedModel
 - parent: RelatedModel
 - category: RelatedModel
@@ -151,6 +152,7 @@ ArchivedTransaction. Must be used in conjunction with ArchivedTransaction.
 - amount: int
 - nonce: bytes
 - account_id: str
+- description: str | None
 - account: RelatedModel
 - transactions: RelatedCollection
 
@@ -164,6 +166,8 @@ the precondition check fails.
 check fails.
 
 #### Methods
+
+##### `__hash__() -> int:`
 
 ##### `@classmethod generate_id(data: dict) -> str:`
 
@@ -220,6 +224,7 @@ used in conjunction with ArchivedEntry.
 - ledger_ids: str
 - timestamp: str
 - auth_scripts: bytes
+- description: str | None
 - entries: RelatedCollection
 - ledgers: RelatedCollection
 
@@ -276,6 +281,7 @@ and one crediting the Equity account of the payee.
 - identity_ids: str
 - ledger_ids: str
 - signatures: bytes | None
+- description: str | None
 - identities: RelatedCollection
 - ledgers: RelatedCollection
 - rollups: RelatedCollection
@@ -339,10 +345,13 @@ signed int (equal to Nostro - Vostro).
 - fx_symbol: str | None
 - unit_divisions: <class 'int'>
 - base: int | None
+- description: str | None
 - ledgers: <class 'sqloquent.interfaces.RelatedCollection'>
 
 #### Properties
 
+- details: A string stored in the database as text. Note that this will be
+changed to a packify.SerializableType stored as a blob in 0.4.0.
 - ledgers: The related Ledgers. Setting raises TypeError if the precondition
 check fails.
 
@@ -388,6 +397,12 @@ the `decimal_places`. E.g. `.format(200, use_decimal=False, divider=':') ==
 - columns_excluded_from_hash: tuple[str]
 - details: str | None
 - code: str | None
+- description: str | None
+
+#### Properties
+
+- details: A string stored in the database as text. Note that this will be
+changed to a packify.SerializableType stored as a blob in 0.4.0.
 
 ### `DeletedModel(SqlModel)`
 
@@ -446,6 +461,7 @@ record. Raises TypeError if packed record is not a dict.
 - amount: int
 - nonce: bytes
 - account_id: str
+- description: str | None
 - account: RelatedModel
 - transactions: RelatedCollection
 
@@ -459,6 +475,8 @@ check fails.
 precondition check fails.
 
 #### Methods
+
+##### `__hash__() -> int:`
 
 ##### `@classmethod generate_id(data: dict) -> str:`
 
@@ -518,11 +536,13 @@ Enum of valid Entry types (CREDIT and DEBIT).
 - pubkey: bytes | None
 - seed: bytes | None
 - secret_details: bytes | None
+- description: str | None
 - ledgers: RelatedCollection
 - correspondences: RelatedCollection
 
 #### Properties
 
+- details: A packify.SerializableType stored in the database as a blob.
 - ledgers: The related Ledgers. Setting raises TypeError if the precondition
 check fails.
 - correspondences: The related Correspondences. Setting raises TypeError if the
@@ -561,6 +581,7 @@ Get the nosto and vostro accounts for a correspondent.
 - type: str
 - identity_id: str
 - currency_id: str
+- description: str | None
 - owner: RelatedModel
 - currency: RelatedModel
 - accounts: RelatedCollection
@@ -643,6 +664,7 @@ script to be recorded in the auth_scripts dict of the Transaction.
 - ledger_ids: str
 - timestamp: str
 - auth_scripts: bytes
+- description: str | None
 - entries: RelatedCollection
 - ledgers: RelatedCollection
 - rollups: RelatedCollection
@@ -730,6 +752,7 @@ verified by mirrors that have only the tx_root.
 - balances: bytes
 - timestamp: str
 - auth_script: bytes | None
+- description: str | None
 - correspondence: RelatedModel
 - ledger: RelatedModel
 - transactions: RelatedCollection
@@ -835,6 +858,12 @@ Returns a query builder for ArchivedEntries committed to in this tx rollup.
 - columns_excluded_from_hash: tuple[str]
 - details: str | None
 - code: str | None
+- description: str | None
+
+#### Properties
+
+- details: A string stored in the database as text. Note that this will be
+changed to a packify.SerializableType stored as a blob in 0.4.0.
 
 ## Functions
 

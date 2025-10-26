@@ -33,6 +33,7 @@ ArchivedTransaction. Must be used in conjunction with ArchivedTransaction.
 - amount: int
 - nonce: bytes
 - account_id: str
+- description: str | None
 - account: AsyncRelatedModel
 - transactions: AsyncRelatedCollection
 
@@ -46,6 +47,8 @@ the precondition check fails.
 check fails.
 
 #### Methods
+
+##### `__hash__() -> int:`
 
 ##### `@classmethod generate_id(data: dict) -> str:`
 
@@ -97,6 +100,7 @@ instead return the result of calling the plugin function.
 - amount: int
 - nonce: bytes
 - account_id: str
+- description: str | None
 - account: AsyncRelatedModel
 - transactions: AsyncRelatedCollection
 
@@ -110,6 +114,8 @@ check fails.
 precondition check fails.
 
 #### Methods
+
+##### `__hash__() -> int:`
 
 ##### `@classmethod generate_id(data: dict) -> str:`
 
@@ -169,6 +175,7 @@ ArchivedEntry.
 - locking_scripts: bytes | None
 - category_id: str | None
 - active: bool | Default[True]
+- description: str | None
 - ledger: AsyncRelatedModel
 - parent: AsyncRelatedModel
 - category: AsyncRelatedModel
@@ -292,6 +299,7 @@ Ensure conditions are encoded before querying.
 - type: str
 - identity_id: str
 - currency_id: str
+- description: str | None
 - owner: AsyncRelatedModel
 - currency: AsyncRelatedModel
 - accounts: AsyncRelatedCollection
@@ -363,11 +371,13 @@ categories: Asset, Liability, Equity.
 - pubkey: bytes | None
 - seed: bytes | None
 - secret_details: bytes | None
+- description: str | None
 - ledgers: AsyncRelatedCollection
 - correspondences: AsyncRelatedCollection
 
 #### Properties
 
+- details: A packify.SerializableType stored in the database as a blob.
 - ledgers: The related Ledgers. Setting raises TypeError if the precondition
 check fails.
 - correspondences: The related Correspondences. Setting raises TypeError if the
@@ -389,6 +399,15 @@ Get the nosto and vostro accounts for a correspondent.
 
 ### `Correspondence(AsyncHashedModel)`
 
+A Correspondence is a typically bilateral credit arrangement in which two
+Identities transact with each other using Nostro and Vostro accounts on their
+Ledgers, where the Nostro asset account on one Identity's Ledger corresponds to
+the Vostro liability account on the other Identity's Ledger. A transfer takes
+the form of a Transaction with four Entries: one debiting (deducting from) the
+Equity account of the payer; one crediting the Nostro or Vostro account on the
+payer's Ledger; one debiting the Nostro or Vostro account on the payee's Ledger;
+and one crediting the Equity account of the payee.
+
 #### Annotations
 
 - table: str
@@ -406,6 +425,7 @@ Get the nosto and vostro accounts for a correspondent.
 - identity_ids: str
 - ledger_ids: str
 - signatures: bytes | None
+- description: str | None
 - identities: AsyncRelatedCollection
 - ledgers: AsyncRelatedCollection
 - rollups: AsyncRelatedCollection
@@ -451,8 +471,8 @@ signed int (equal to Nostro - Vostro).
 
 Optional class for storing a trimmed Transaction after is has included in a
 TxRollup. This allows accessing the trimmed Transaction details more efficiently
-than by loading the DeletedModel that contains the trimmed Transaction. Must be
-used in conjunction with ArchivedEntry.
+than by loading the AsyncDeletedModel that contains the trimmed Transaction.
+Must be used in conjunction with ArchivedEntry.
 
 #### Annotations
 
@@ -472,6 +492,7 @@ used in conjunction with ArchivedEntry.
 - ledger_ids: str
 - timestamp: str
 - auth_scripts: bytes
+- description: str | None
 - entries: AsyncRelatedCollection
 - ledgers: AsyncRelatedCollection
 
@@ -521,10 +542,13 @@ Validate the transaction, save the entries, then save the transaction.
 - fx_symbol: str | None
 - unit_divisions: <class 'int'>
 - base: int | None
+- description: str | None
 - ledgers: <class 'sqloquent.asyncql.interfaces.AsyncRelatedCollection'>
 
 #### Properties
 
+- details: A string stored in the database as text. Note that this will be
+changed to a packify.SerializableType stored as a blob in 0.4.0.
 - ledgers: The related Ledgers. Setting raises TypeError if the precondition
 check fails.
 
@@ -570,6 +594,12 @@ the `decimal_places`. E.g. `.format(200, use_decimal=False, divider=':') ==
 - columns_excluded_from_hash: tuple[str]
 - details: str | None
 - code: str | None
+- description: str | None
+
+#### Properties
+
+- details: A string stored in the database as text. Note that this will be
+changed to a packify.SerializableType stored as a blob in 0.4.0.
 
 ### `Transaction(AsyncHashedModel)`
 
@@ -596,6 +626,7 @@ script to be recorded in the auth_scripts dict of the Transaction.
 - ledger_ids: str
 - timestamp: str
 - auth_scripts: bytes
+- description: str | None
 - entries: AsyncRelatedCollection
 - ledgers: AsyncRelatedCollection
 - rollups: AsyncRelatedCollection
@@ -683,6 +714,7 @@ verified by mirrors that have only the tx_root.
 - balances: bytes
 - timestamp: str
 - auth_script: bytes | None
+- description: str | None
 - correspondence: AsyncRelatedModel
 - ledger: AsyncRelatedModel
 - transactions: AsyncRelatedCollection
@@ -788,6 +820,12 @@ Returns a query builder for ArchivedEntries committed to in this tx rollup.
 - columns_excluded_from_hash: tuple[str]
 - details: str | None
 - code: str | None
+- description: str | None
+
+#### Properties
+
+- details: A string stored in the database as text. Note that this will be
+changed to a packify.SerializableType stored as a blob in 0.4.0.
 
 ### `AsyncDeletedModel(AsyncSqlModel)`
 
