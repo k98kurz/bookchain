@@ -70,19 +70,19 @@ class TestAsyncBasicE2E(unittest.TestCase):
         # setup account categories
         equity_acct_cat = run(asyncql.AccountCategory.insert({
             'name': 'Equity',
-            'ledger_type': asyncql.LedgerType.PRESENT,
+            'ledger_type': asyncql.LedgerType.CURRENT,
             'destination': 'Balance Sheet',
         }))
         assert equity_acct_cat is not None
         assert run(asyncql.AccountCategory.find(equity_acct_cat.id)) is not None
         asset_acct_cat = run(asyncql.AccountCategory.insert({
             'name': 'Asset',
-            'ledger_type': asyncql.LedgerType.PRESENT,
+            'ledger_type': asyncql.LedgerType.CURRENT,
             'destination': 'Balance Sheet',
         }))
         liability_acct_cat = run(asyncql.AccountCategory.insert({
             'name': 'Liability',
-            'ledger_type': asyncql.LedgerType.PRESENT,
+            'ledger_type': asyncql.LedgerType.CURRENT,
             'destination': 'Balance Sheet',
         }))
 
@@ -99,7 +99,7 @@ class TestAsyncBasicE2E(unittest.TestCase):
             'name': 'General Ledger',
             'identity_id': identity.id,
             'currency_id': currency.id,
-            'type': asyncql.LedgerType.PRESENT,
+            'type': asyncql.LedgerType.CURRENT,
         }))
         equity_acct = run(asyncql.Account.insert({
             'name': 'General Equity',

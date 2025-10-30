@@ -69,19 +69,19 @@ class TestBasicE2E(unittest.TestCase):
         # setup account categories
         equity_acct_cat = models.AccountCategory.insert({
             'name': 'Equity',
-            'ledger_type': models.LedgerType.PRESENT,
+            'ledger_type': models.LedgerType.CURRENT,
             'destination': 'Balance Sheet',
         })
         assert equity_acct_cat is not None
         assert models.AccountCategory.find(equity_acct_cat.id) is not None
         asset_acct_cat = models.AccountCategory.insert({
             'name': 'Asset',
-            'ledger_type': models.LedgerType.PRESENT,
+            'ledger_type': models.LedgerType.CURRENT,
             'destination': 'Balance Sheet',
         })
         liability_acct_cat = models.AccountCategory.insert({
             'name': 'Liability',
-            'ledger_type': models.LedgerType.PRESENT,
+            'ledger_type': models.LedgerType.CURRENT,
             'destination': 'Balance Sheet',
         })
 
@@ -98,7 +98,7 @@ class TestBasicE2E(unittest.TestCase):
             'name': 'General Ledger',
             'identity_id': identity.id,
             'currency_id': currency.id,
-            'type': models.LedgerType.PRESENT,
+            'type': models.LedgerType.CURRENT,
         })
         equity_acct = models.Account.insert({
             'name': 'General Equity',
