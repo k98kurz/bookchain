@@ -23,6 +23,8 @@ class TestBasicE2E(unittest.TestCase):
         models.Entry.connection_info = DB_FILEPATH
         models.Transaction.connection_info = DB_FILEPATH
         sqloquent.DeletedModel.connection_info = DB_FILEPATH
+        models.Customer.connection_info = DB_FILEPATH
+        models.Vendor.connection_info = DB_FILEPATH
         super().setUpClass()
 
     def setUp(self):
@@ -44,6 +46,7 @@ class TestBasicE2E(unittest.TestCase):
             models.Identity, models.Currency, models.Ledger,
             models.Account, models.AccountCategory, models.Entry,
             models.Transaction,
+            models.Customer, models.Vendor,
         ]
         for model in tomigrate:
             name = model.__name__
@@ -246,6 +249,27 @@ class TestBasicE2E(unittest.TestCase):
         assert restored.id == identity.id
         restored.save()
         assert models.Identity.find(identity.id) is not None
+
+        # test additional models
+        customer = models.Customer({
+            'name': 'John Doe',
+            'code': 'JD',
+            'description': 'test customer',
+        })
+        customer.details = {'foo': 'bar'}
+        customer.save()
+        assert customer.id is not None
+        assert customer.details == {'foo': 'bar'}
+
+        vendor = models.Vendor({
+            'name': 'Acme Inc.',
+            'code': 'ACME',
+            'description': 'test vendor',
+        })
+        vendor.details = {'foo': 'bar'}
+        vendor.save()
+        assert vendor.id is not None
+        assert vendor.details == {'foo': 'bar'}
 
 
 if __name__ == '__main__':

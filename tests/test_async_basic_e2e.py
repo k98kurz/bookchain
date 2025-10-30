@@ -24,6 +24,8 @@ class TestAsyncBasicE2E(unittest.TestCase):
         asyncql.Entry.connection_info = DB_FILEPATH
         asyncql.Transaction.connection_info = DB_FILEPATH
         AsyncDeletedModel.connection_info = DB_FILEPATH
+        asyncql.Customer.connection_info = DB_FILEPATH
+        asyncql.Vendor.connection_info = DB_FILEPATH
         super().setUpClass()
 
     def setUp(self):
@@ -45,6 +47,7 @@ class TestAsyncBasicE2E(unittest.TestCase):
             asyncql.Identity, asyncql.Currency, asyncql.Ledger,
             asyncql.Account, asyncql.AccountCategory, asyncql.Entry,
             asyncql.Transaction,
+            asyncql.Customer, asyncql.Vendor,
         ]
         for model in tomigrate:
             name = model.__name__
@@ -247,6 +250,29 @@ class TestAsyncBasicE2E(unittest.TestCase):
         assert restored.id == identity.id
         run(restored.save())
         assert run(asyncql.Identity.find(identity.id)) is not None
+
+        # test additional models
+        async def test_async_additional_models():
+            customer = asyncql.Customer({
+                'name': 'John Doe',
+                'code': 'JD',
+                'description': 'test customer (async)',
+            })
+            customer.details = {'foo': 'bar'}
+            await customer.save()
+            assert customer.id is not None
+            assert customer.details == {'foo': 'bar'}
+            vendor = asyncql.Vendor({
+                'name': 'Acme Inc.',
+                'code': 'ACME',
+                'description': 'test vendor (async)',
+            })
+            vendor.details = {'foo': 'bar'}
+            await vendor.save()
+            assert vendor.id is not None
+            assert vendor.details == {'foo': 'bar'}
+
+        run(test_async_additional_models())
 
 
 if __name__ == '__main__':

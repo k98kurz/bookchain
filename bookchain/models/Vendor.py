@@ -1,4 +1,8 @@
 from sqloquent import HashedModel
+import packify
+
+
+_empty_dict = packify.pack({})
 
 
 class Vendor(HashedModel):
@@ -10,17 +14,14 @@ class Vendor(HashedModel):
     id: str
     name: str
     code: str|None
-    details: str|None
+    details: bytes|None
     description: str|None
 
     # override automatic property
     @property
-    def details(self) -> str|None:
-        """A string stored in the database as text. Note that this will
-            be changed to a packify.SerializableType stored as a blob in
-            0.4.0.
-        """
-        return self.data.get('details', None)
+    def details(self) -> packify.SerializableType:
+        """A packify.SerializableType stored in the database as a blob."""
+        return packify.unpack(self.data.get('details', _empty_dict))
     @details.setter
-    def details(self, val: str|None):
-        self.data['details'] = val
+    def details(self, val: packify.SerializableType):
+        self.data['details'] = packify.pack(val)
