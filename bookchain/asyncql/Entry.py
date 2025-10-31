@@ -102,6 +102,9 @@ class Entry(AsyncHashedModel):
             cryptographically commits to all record data. If entries are
             provided in the kwargs, the returned dict will include
             sigfield2 set to the concatenation of the sorted entry ids.
+            Unless sigfield2 can be excluded from auth script validation
+            (e.g. `sigflags='02'`), entries should be provided in the
+            kwargs (i.e. `get_sigfields(entries=[entry1, ...])`).
             If the set_sigfield_plugin method was previously called,
             this will instead return the result of calling the plugin
             function.
