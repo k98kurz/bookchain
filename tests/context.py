@@ -3,4 +3,4 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import bookchain
-from bookchain import models, asyncql
+from bookchain import models, asyncql, helpers
