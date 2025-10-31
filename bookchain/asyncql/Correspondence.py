@@ -105,8 +105,7 @@ class Correspondence(AsyncHashedModel):
                 type=AccountType.EQUITY.value
             ).starts_with(name='General Equity').first()
             if acct is not None:
-                await acct.ledger().reload()
-                accounts[acct.ledger.identity_id][acct.type] = acct
+                accounts[ledger.identity_id][acct.type] = acct
         return accounts
 
     async def setup_accounts(
