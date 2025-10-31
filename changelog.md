@@ -1,3 +1,30 @@
+## 0.4.0
+
+- Renamed `LedgerType.PRESENT` to `LedgerType.CURRENT`.
+- Added a `parse_timestamp` helper to parse string timestamps into Unix epoch ints
+- `Transaction.validate()` updated:
+  - Each auth script can now be scoped to an entry ID (falls back to account ID)
+  - Tapescript runtime cache now includes the following:
+    - "sigfield2": the catenation of the sorted IDs of all entries, allowing
+      locking scripts to require binding to the full transaction or just a
+      single entry (`sigflags='02'` to allow masking out sigfield2).
+    - "timestamp": `parse_timestamp(transaction.timestamp)`, if it can be
+      parsed; otherwise left unset.
+    - "e_idx": the index of the current `Entry` in the lists of entry values
+    - "e_ids": the `transaction.entry_ids` list of `Entry` IDs
+    - "e_type": a list of bools for each `Entry` where `True` means it is credit
+      and `False` means it is a debit entry
+    - "e_amount": the list of `Entry.amount`s
+    - "e_nonce": the list of `Entry.nonce`s
+    - "e_acct_id": the list of `Entry.account_id`s
+- Added `Account.correspondence_id` field and `Account.correspondence` relation.
+  - Updated `Correspondence.get_accounts()`, `.setup_accounts()`, and
+    `.pay_correspondent()` to make use of the new column and relation.
+  - Updated `Identity.get_correspondent_accounts` to use the new relation.
+- Updated `Correspondence` system to require a "General Equity" account for each
+  participating `Identity`/`Ledger`.
+- Added nullable, non-hashed `Entry.timestamp` column to make querying easier.
+
 ## 0.3.3
 
 - Added text `description` column to the following models:
