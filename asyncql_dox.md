@@ -77,8 +77,12 @@ This is an optional override.
 
 Get the sigfields for tapescript authorization. By default, it returns
 {sigfield1: self.generate_id()} because the ID cryptographically commits to all
-record data. If the set_sigfield_plugin method was previously called, this will
-instead return the result of calling the plugin function.
+record data. If entries are provided in the kwargs, the returned dict will
+include sigfield2 set to the concatenation of the sorted entry ids. Unless
+sigfield2 can be excluded from auth script validation (e.g. `sigflags='02'`),
+entries should be provided in the kwargs (i.e. `get_sigfields(entries=[entry1, ...])`).
+If the set_sigfield_plugin method was previously called, this will instead
+return the result of calling the plugin function.
 
 ### `Entry(AsyncHashedModel)`
 
@@ -101,6 +105,7 @@ instead return the result of calling the plugin function.
 - nonce: bytes
 - account_id: str
 - description: str | None
+- timestamp: str | None
 - account: AsyncRelatedModel
 - transactions: AsyncRelatedCollection
 
@@ -144,8 +149,12 @@ override.
 
 Get the sigfields for tapescript authorization. By default, it returns
 {sigfield1: self.generate_id()} because the ID cryptographically commits to all
-record data. If the set_sigfield_plugin method was previously called, this will
-instead return the result of calling the plugin function.
+record data. If entries are provided in the kwargs, the returned dict will
+include sigfield2 set to the concatenation of the sorted entry ids. Unless
+sigfield2 can be excluded from auth script validation (e.g. `sigflags='02'`),
+entries should be provided in the kwargs (i.e. `get_sigfields(entries=[entry1, ...])`).
+If the set_sigfield_plugin method was previously called, this will instead
+return the result of calling the plugin function.
 
 ##### `async archive() -> ArchivedEntry | None:`
 
@@ -172,12 +181,14 @@ ArchivedEntry.
 - ledger_id: str
 - parent_id: str
 - code: str | None
+- correspondence_id: str | None
 - locking_scripts: bytes | None
 - category_id: str | None
 - active: bool | Default[True]
 - description: str | None
 - ledger: AsyncRelatedModel
 - parent: AsyncRelatedModel
+- correspondence: AsyncRelatedModel
 - category: AsyncRelatedModel
 - children: AsyncRelatedCollection
 - entries: AsyncRelatedCollection
@@ -189,6 +200,8 @@ ArchivedEntry.
 - locking_scripts: The dict mapping EntryType to tapescript locking script
 bytes.
 - details: A packify.SerializableType stored in the database as a blob.
+- correspondence: The related Correspondence. Setting raises TypeError if the
+precondition check fails.
 - ledger: The related Ledger. Setting raises TypeError if the precondition check
 fails.
 - children: The related Accounts. Setting raises TypeError if the precondition
@@ -233,7 +246,7 @@ EntryType. Returns True if it does and False if it does not (or if it errors).
 
 ### `LedgerType(Enum)`
 
-Enum of valid ledger types: PRESENT and FUTURE for cash and accrual accounting,
+Enum of valid ledger types: CURRENT and FUTURE for cash and accrual accounting,
 respectively.
 
 ### `AccountCategory(AsyncHashedModel)`
@@ -393,7 +406,7 @@ Return the public data for cloning the Identity.
 
 Get the correspondents for this Identity.
 
-##### `async get_correspondent_accounts(correspondent: Identity) -> list[Account]:`
+##### `async get_correspondent_accounts(correspondent: Identity, reload: bool = False) -> list[Account]:`
 
 Get the nosto and vostro accounts for a correspondent.
 
@@ -429,6 +442,7 @@ and one crediting the Equity account of the payee.
 - identities: AsyncRelatedCollection
 - ledgers: AsyncRelatedCollection
 - rollups: AsyncRelatedCollection
+- accounts: AsyncRelatedCollection
 
 #### Properties
 
@@ -438,6 +452,8 @@ Identity ID to bytes signature.
 - txru_lock: Returns the txru_lock directly from the details field.
 - ledgers: The related Ledgers. Setting raises TypeError if the precondition
 check fails.
+- accounts: The related Accounts. Setting raises TypeError if the precondition
+check fails.
 - identities: The related Identitys. Setting raises TypeError if the
 precondition check fails.
 - rollups: The related TxRollups. Setting raises TypeError if the precondition
@@ -445,10 +461,11 @@ check fails.
 
 #### Methods
 
-##### `async get_accounts() -> dict[str, dict[AccountType, Account]]:`
+##### `async get_accounts(reload: bool = True) -> dict[str, dict[AccountType, Account]]:`
 
 Loads the relevant nostro and vostro Accounts for the Identities that are part
-of the Correspondence.
+of the Correspondence, as well as the equity Accounts for each Identity,
+returning a dict of the form { identity.id: { AccountType: Account }}.
 
 ##### `async setup_accounts(locking_scripts: dict[str, bytes]) -> dict[str, dict[AccountType, Account]]:`
 
@@ -592,14 +609,13 @@ the `decimal_places`. E.g. `.format(200, use_decimal=False, divider=':') ==
 - data_original: MappingProxyType
 - _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
-- details: str | None
+- details: bytes | None
 - code: str | None
 - description: str | None
 
 #### Properties
 
-- details: A string stored in the database as text. Note that this will be
-changed to a packify.SerializableType stored as a blob in 0.4.0.
+- details: A packify.SerializableType stored in the database as a blob.
 
 ### `Transaction(AsyncHashedModel)`
 
@@ -661,7 +677,8 @@ scoped to each entry ID. Raises TypeError for invalid arguments. Raises
 ValueError if the entries do not balance for each ledger; if a required auth
 script is missing; or if any of the entries is contained within an existing
 Transaction. If reload is set to True, entries and accounts will be reloaded
-from the database.
+from the database. Auth scripts can be provided by account ID or by entry ID;
+scoping by entry ID will take precedence.
 
 ##### `async save(tapescript_runtime: dict = {}, reload: bool = False) -> Transaction:`
 
@@ -818,14 +835,13 @@ Returns a query builder for ArchivedEntries committed to in this tx rollup.
 - data_original: MappingProxyType
 - _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
-- details: str | None
+- details: bytes | None
 - code: str | None
 - description: str | None
 
 #### Properties
 
-- details: A string stored in the database as text. Note that this will be
-changed to a packify.SerializableType stored as a blob in 0.4.0.
+- details: A packify.SerializableType stored in the database as a blob.
 
 ### `AsyncDeletedModel(AsyncSqlModel)`
 

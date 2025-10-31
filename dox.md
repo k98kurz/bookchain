@@ -22,12 +22,14 @@
 - ledger_id: str
 - parent_id: str
 - code: str | None
+- correspondence_id: str | None
 - locking_scripts: bytes | None
 - category_id: str | None
 - active: bool | Default[True]
 - description: str | None
 - ledger: RelatedModel
 - parent: RelatedModel
+- correspondence: RelatedModel
 - category: RelatedModel
 - children: RelatedCollection
 - entries: RelatedCollection
@@ -39,6 +41,8 @@
 - locking_scripts: The dict mapping EntryType to tapescript locking script
 bytes.
 - details: A packify.SerializableType stored in the database as a blob.
+- correspondence: The related Correspondence. Setting raises TypeError if the
+precondition check fails.
 - ledger: The related Ledger. Setting raises TypeError if the precondition check
 fails.
 - children: The related Accounts. Setting raises TypeError if the precondition
@@ -196,8 +200,12 @@ This is an optional override.
 
 Get the sigfields for tapescript authorization. By default, it returns
 {sigfield1: self.generate_id()} because the ID cryptographically commits to all
-record data. If the set_sigfield_plugin method was previously called, this will
-instead return the result of calling the plugin function.
+record data. If entries are provided in the kwargs, the returned dict will
+include sigfield2 set to the concatenation of the sorted entry ids. Unless
+sigfield2 can be excluded from auth script validation (e.g. `sigflags='02'`),
+entries should be provided in the kwargs (i.e. `get_sigfields(entries=[entry1, ...])`).
+If the set_sigfield_plugin method was previously called, this will instead
+return the result of calling the plugin function.
 
 ### `ArchivedTransaction(HashedModel)`
 
@@ -285,6 +293,7 @@ and one crediting the Equity account of the payee.
 - identities: RelatedCollection
 - ledgers: RelatedCollection
 - rollups: RelatedCollection
+- accounts: RelatedCollection
 
 #### Properties
 
@@ -294,6 +303,8 @@ Identity ID to bytes signature.
 - txru_lock: Returns the txru_lock directly from the details field.
 - ledgers: The related Ledgers. Setting raises TypeError if the precondition
 check fails.
+- accounts: The related Accounts. Setting raises TypeError if the precondition
+check fails.
 - identities: The related Identitys. Setting raises TypeError if the
 precondition check fails.
 - rollups: The related TxRollups. Setting raises TypeError if the precondition
@@ -301,7 +312,7 @@ check fails.
 
 #### Methods
 
-##### `get_accounts() -> dict[str, dict[AccountType, Account]]:`
+##### `get_accounts(reload: bool = True) -> dict[str, dict[AccountType, Account]]:`
 
 Loads the relevant nostro and vostro Accounts for the Identities that are part
 of the Correspondence, as well as the equity Accounts for each Identity,
@@ -395,14 +406,13 @@ the `decimal_places`. E.g. `.format(200, use_decimal=False, divider=':') ==
 - data_original: MappingProxyType
 - _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
-- details: str | None
+- details: bytes | None
 - code: str | None
 - description: str | None
 
 #### Properties
 
-- details: A string stored in the database as text. Note that this will be
-changed to a packify.SerializableType stored as a blob in 0.4.0.
+- details: A packify.SerializableType stored in the database as a blob.
 
 ### `DeletedModel(SqlModel)`
 
@@ -462,6 +472,7 @@ record. Raises TypeError if packed record is not a dict.
 - nonce: bytes
 - account_id: str
 - description: str | None
+- timestamp: str | None
 - account: RelatedModel
 - transactions: RelatedCollection
 
@@ -505,8 +516,12 @@ override.
 
 Get the sigfields for tapescript authorization. By default, it returns
 {sigfield1: self.generate_id()} because the ID cryptographically commits to all
-record data. If the set_sigfield_plugin method was previously called, this will
-instead return the result of calling the plugin function.
+record data. If entries are provided in the kwargs, the returned dict will
+include sigfield2 set to the concatenation of the sorted entry ids. Unless
+sigfield2 can be excluded from auth script validation (e.g. `sigflags='02'`),
+entries should be provided in the kwargs (i.e. `get_sigfields(entries=[entry1, ...])`).
+If the set_sigfield_plugin method was previously called, this will instead
+return the result of calling the plugin function.
 
 ##### `archive() -> ArchivedEntry | None:`
 
@@ -558,7 +573,7 @@ Return the public data for cloning the Identity.
 
 Get the correspondents for this Identity.
 
-##### `get_correspondent_accounts(correspondent: Identity) -> list[Account]:`
+##### `get_correspondent_accounts(correspondent: Identity, reload: bool = False) -> list[Account]:`
 
 Get the nosto and vostro accounts for a correspondent.
 
@@ -636,7 +651,7 @@ categories: Asset, Liability, Equity.
 
 ### `LedgerType(Enum)`
 
-Enum of valid ledger types: PRESENT and FUTURE for cash and accrual accounting,
+Enum of valid ledger types: CURRENT and FUTURE for cash and accrual accounting,
 respectively.
 
 ### `Transaction(HashedModel)`
@@ -699,7 +714,8 @@ scoped to each entry ID. Raises TypeError for invalid arguments. Raises
 ValueError if the entries do not balance for each ledger; if a required auth
 script is missing; or if any of the entries is contained within an existing
 Transaction. If reload is set to True, entries and accounts will be reloaded
-from the database.
+from the database. Auth scripts can be provided by account ID or by entry ID;
+scoping by entry ID will take precedence.
 
 ##### `save(tapescript_runtime: dict = {}, reload: bool = False) -> Transaction:`
 
@@ -856,14 +872,13 @@ Returns a query builder for ArchivedEntries committed to in this tx rollup.
 - data_original: MappingProxyType
 - _event_hooks: dict[str, list[Callable]]
 - columns_excluded_from_hash: tuple[str]
-- details: str | None
+- details: bytes | None
 - code: str | None
 - description: str | None
 
 #### Properties
 
-- details: A string stored in the database as text. Note that this will be
-changed to a packify.SerializableType stored as a blob in 0.4.0.
+- details: A packify.SerializableType stored in the database as a blob.
 
 ## Functions
 
@@ -890,5 +905,14 @@ Executes the sqloquent automigrate tool.
 ### `version() -> str:`
 
 Returns the version of the bookchain package.
+
+### `parse_timestamp(timestamp: str) -> int | None:`
+
+Helper function to automatically parse a timestamp string into a Unix epoch
+timestamp. Returns None if the timestamp is invalid. Supports: - Unix epoch as
+integer string (e.g., "1234567890") - Unix epoch as float string (e.g.,
+"1234567890.123") - ISO 8601 format strings (e.g., "2023-01-01T00:00:00Z") -
+Other datetime formats parseable by datetime.fromisoformat() or
+datetime.strptime()
 
 
