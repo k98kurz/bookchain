@@ -169,7 +169,10 @@ class Transaction(HashedModel):
             if 'sigfield1' not in runtime['cache']:
                 runtime['cache'] = {
                     **runtime['cache'],
-                    **entry.get_sigfields(tapescript_runtime=tapescript_runtime)
+                    **entry.get_sigfields(
+                        tapescript_runtime=tapescript_runtime,
+                        entries=self.entries,
+                    )
                 }
             if not acct.validate_script(entry.type, self.auth_scripts[acct.id], runtime):
                 return False

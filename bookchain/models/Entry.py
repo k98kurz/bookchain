@@ -95,13 +95,21 @@ class Entry(HashedModel):
     def get_sigfields(self, *args, **kwargs) -> dict[str, bytes]:
         """Get the sigfields for tapescript authorization. By default,
             it returns {sigfield1: self.generate_id()} because the ID
-            cryptographically commits to all record data. If the
-            set_sigfield_plugin method was previously called, this will
-            instead return the result of calling the plugin function.
+            cryptographically commits to all record data. If entries are
+            provided in the kwargs, the returned dict will include
+            sigfield2 set to the concatenation of the sorted entry ids.
+            If the set_sigfield_plugin method was previously called,
+            this will instead return the result of calling the plugin
+            function.
         """
         if hasattr(self, '_plugin') and callable(self._plugin):
             return self._plugin(self, *args, **kwargs)
-        return {'sigfield1': bytes.fromhex(self.generate_id({**self.data}))}
+        sigfields = {'sigfield1': bytes.fromhex(self.generate_id({**self.data}))}
+        if 'entries' in kwargs:
+            entry_ids = [bytes.fromhex(e.generate_id(e.data)) for e in kwargs['entries']]
+            entry_ids.sort()
+            sigfields['sigfield2'] = b''.join(entry_ids)
+        return sigfields
 
     def archive(self) -> ArchivedEntry|None:
         """Archive the Entry. If it has already been archived,

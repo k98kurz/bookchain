@@ -63,10 +63,11 @@ class TestAsyncAdvancedE2E(unittest.TestCase):
         # set up cryptographic stuff
         seed = os.urandom(32)
         pkey = bytes(SigningKey(seed).verify_key)
-        committed_script = tapescript.tools.make_delegate_key_lock(pkey)
+        committed_script = tapescript.tools.make_delegate_key_lock(pkey, '02')
         locking_script = tapescript.tools.make_taproot_lock(
             pkey,
-            committed_script
+            committed_script,
+            sigflags='02'
         ).bytes
         delegate_seed = os.urandom(32)
         delegate_pkey = bytes(SigningKey(delegate_seed).verify_key)
@@ -167,23 +168,67 @@ class TestAsyncAdvancedE2E(unittest.TestCase):
         })
         liability_entry.account = liability_acct
         liability_entry.id = liability_entry.generate_id(liability_entry.data)
+        entries = [equity_entry, liability_entry]
         auth_scripts = {
             equity_acct.id: tapescript.tools.make_taproot_witness_keyspend(
-                seed, equity_entry.get_sigfields(), committed_script
+                seed, equity_entry.get_sigfields(entries=entries), committed_script
             ).bytes,
             liability_acct.id: tapescript.tools.make_taproot_witness_keyspend(
-                seed, liability_entry.get_sigfields(), committed_script
+                seed, liability_entry.get_sigfields(entries=entries), committed_script
             ).bytes,
         }
-        assert len(equity_entry.get_sigfields()['sigfield1']) == 32
+        assert len(equity_entry.get_sigfields(entries=entries)['sigfield1']) == 32
+        assert len(equity_entry.get_sigfields(entries=entries)['sigfield2']) == 64
+        assert len(liability_entry.get_sigfields(entries=entries)['sigfield1']) == 32
+        assert len(liability_entry.get_sigfields(entries=entries)['sigfield2']) == 64
         txn = run(asyncql.Transaction.prepare(
             [equity_entry, liability_entry],
             str(time()),
             auth_scripts,
         ))
         assert run(txn.validate())
-        run(equity_entry.save())
-        run(liability_entry.save())
+        run(txn.save())
+        # reload txn from database and validate it
+        txn: asyncql.Transaction = run(asyncql.Transaction.find(txn.id))
+        assert run(txn.validate(reload=True))
+
+        # prepare and save a valid transaction: auth required, bound to only sigfield1
+        txn_nonce = os.urandom(16)
+        equity_entry = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
+            'account_id': equity_acct.id,
+            'amount': 10_00,
+            'nonce': txn_nonce,
+        })
+        equity_entry.account = equity_acct
+        equity_entry.id = equity_entry.generate_id(equity_entry.data)
+        liability_entry = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
+            'account_id': liability_acct.id,
+            'amount': 10_00,
+            'nonce': txn_nonce,
+        })
+        liability_entry.account = liability_acct
+        liability_entry.id = liability_entry.generate_id(liability_entry.data)
+        entries = [equity_entry, liability_entry]
+        auth_scripts = {
+            equity_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+                seed, equity_entry.get_sigfields(entries=entries), committed_script, sigflags='02'
+            ).bytes,
+            liability_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+                seed, liability_entry.get_sigfields(entries=entries), committed_script, sigflags='02'
+            ).bytes,
+        }
+        assert len(equity_entry.get_sigfields(entries=entries)['sigfield1']) == 32
+        assert len(equity_entry.get_sigfields(entries=entries)['sigfield2']) == 64
+        assert len(liability_entry.get_sigfields(entries=entries)['sigfield1']) == 32
+        assert len(liability_entry.get_sigfields(entries=entries)['sigfield2']) == 64
+        txn = run(asyncql.Transaction.prepare(
+            entries,
+            str(time()),
+            auth_scripts,
+        ))
+        assert run(txn.validate())
         run(txn.save())
         # reload txn from database and validate it
         txn: asyncql.Transaction = run(asyncql.Transaction.find(txn.id))
@@ -207,12 +252,13 @@ class TestAsyncAdvancedE2E(unittest.TestCase):
         })
         liability_entry.account = liability_acct
         liability_entry.id = liability_entry.generate_id(liability_entry.data)
+        entries = [equity_entry, liability_entry]
         auth_scripts = {
             equity_acct.id: (
                 tapescript.tools.make_delegate_key_witness(
                     delegate_seed,
                     delegate_cert,
-                    equity_entry.get_sigfields()
+                    equity_entry.get_sigfields(entries=entries)
                 ) +
                 tapescript.tools.make_taproot_witness_scriptspend(
                     pkey, committed_script
@@ -222,13 +268,17 @@ class TestAsyncAdvancedE2E(unittest.TestCase):
                 tapescript.tools.make_delegate_key_witness(
                     delegate_seed,
                     delegate_cert,
-                    liability_entry.get_sigfields()
+                    liability_entry.get_sigfields(entries=entries)
                 ) +
                 tapescript.tools.make_taproot_witness_scriptspend(
                     pkey, committed_script
                 )
             ).bytes,
         }
+        assert len(equity_entry.get_sigfields(entries=entries)['sigfield1']) == 32
+        assert len(equity_entry.get_sigfields(entries=entries)['sigfield2']) == 64
+        assert len(liability_entry.get_sigfields(entries=entries)['sigfield1']) == 32
+        assert len(liability_entry.get_sigfields(entries=entries)['sigfield2']) == 64
         txn = run(asyncql.Transaction.prepare(
             [equity_entry, liability_entry],
             str(time()),
@@ -308,6 +358,41 @@ class TestAsyncAdvancedE2E(unittest.TestCase):
             txn = run(asyncql.Transaction.prepare([equity_entry, asset_entry], str(int(time()))))
         assert 'already contained within a Transaction' in str(e.exception)
 
+        # prepare invalid transaction: invalid exclusion of sigfield1
+        txn_nonce = os.urandom(16)
+        equity_entry = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
+            'account_id': equity_acct.id,
+            'amount': 10_00,
+            'nonce': txn_nonce,
+        })
+        equity_entry.account = equity_acct
+        equity_entry.id = equity_entry.generate_id(equity_entry.data)
+        liability_entry = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
+            'account_id': liability_acct.id,
+            'amount': 10_00,
+            'nonce': txn_nonce,
+        })
+        liability_entry.account = liability_acct
+        liability_entry.id = liability_entry.generate_id(liability_entry.data)
+        entries = [equity_entry, liability_entry]
+        auth_scripts = {
+            equity_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+                seed, equity_entry.get_sigfields(entries=entries), committed_script, sigflags='01'
+            ).bytes,
+            liability_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+                seed, liability_entry.get_sigfields(entries=entries), committed_script, sigflags='01'
+            ).bytes,
+        }
+        with self.assertRaises(AssertionError) as e:
+            txn = run(asyncql.Transaction.prepare(
+                [equity_entry, liability_entry],
+                str(time()),
+                auth_scripts,
+            ))
+        assert 'validation failed' in str(e.exception)
+
         # prepare invalid transaction: unbalanced entries
         txn_nonce = os.urandom(16)
         equity_entry = asyncql.Entry({
@@ -332,8 +417,16 @@ class TestAsyncAdvancedE2E(unittest.TestCase):
         # test get_sigfields plugin system
         def get_sigfields(entry: asyncql.Entry, *args, **kwargs) -> dict:
             """Concat the entry id to the account id."""
+            sigfield1 = bytes.fromhex(entry.id + entry.account_id)
+            if 'entries' in kwargs:
+                entry_ids = [bytes.fromhex(e.generate_id(e.data)) for e in kwargs['entries']]
+                entry_ids.sort()
+                sigfield2 = b''.join(entry_ids)
+            else:
+                sigfield2 = b''
             return {
-                'sigfield1': bytes.fromhex(entry.id + entry.account_id)
+                'sigfield1': sigfield1,
+                'sigfield2': sigfield2,
             }
         asyncql.Entry.set_sigfield_plugin(get_sigfields)
 
@@ -355,12 +448,13 @@ class TestAsyncAdvancedE2E(unittest.TestCase):
         })
         liability_entry.account = liability_acct
         liability_entry.id = liability_entry.generate_id(liability_entry.data)
+        entries = [equity_entry, liability_entry]
         auth_scripts = {
             equity_acct.id: tapescript.tools.make_taproot_witness_keyspend(
-                seed, equity_entry.get_sigfields(), committed_script
+                seed, equity_entry.get_sigfields(entries=entries), committed_script
             ).bytes,
             liability_acct.id: tapescript.tools.make_taproot_witness_keyspend(
-                seed, liability_entry.get_sigfields(), committed_script
+                seed, liability_entry.get_sigfields(entries=entries), committed_script
             ).bytes,
         }
         assert len(equity_entry.get_sigfields()['sigfield1']) == 64
@@ -371,6 +465,43 @@ class TestAsyncAdvancedE2E(unittest.TestCase):
         ))
         assert run(txn.validate())
         run(txn.save())
+
+        # prepare and save an invalid transaction: invalid sigfield2
+        txn_nonce = os.urandom(16)
+        equity_entry = asyncql.Entry({
+            'type': asyncql.EntryType.DEBIT,
+            'account_id': equity_acct.id,
+            'amount': 10_00,
+            'nonce': txn_nonce,
+        })
+        equity_entry.account = equity_acct
+        equity_entry.id = equity_entry.generate_id(equity_entry.data)
+        liability_entry = asyncql.Entry({
+            'type': asyncql.EntryType.CREDIT,
+            'account_id': liability_acct.id,
+            'amount': 10_00,
+            'nonce': txn_nonce,
+        })
+        liability_entry.account = liability_acct
+        liability_entry.id = liability_entry.generate_id(liability_entry.data)
+        entries = [equity_entry, liability_entry]
+        auth_scripts = {
+            equity_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+                seed, equity_entry.get_sigfields(), committed_script
+            ).bytes,
+            liability_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+                seed, liability_entry.get_sigfields(), committed_script
+            ).bytes,
+        }
+        assert len(equity_entry.get_sigfields()['sigfield1']) == 64
+        with self.assertRaises(AssertionError) as e:
+            txn = run(asyncql.Transaction.prepare(
+                entries,
+                str(time()),
+                auth_scripts,
+            ))
+        assert 'validation failed' in str(e.exception)
+
         # cleanup
         del asyncql.Entry._plugin
 
