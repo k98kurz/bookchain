@@ -168,10 +168,10 @@ class TestAdvancedE2E(unittest.TestCase):
         liability_entry.id = liability_entry.generate_id(liability_entry.data)
         entries = [equity_entry, liability_entry]
         auth_scripts = {
-            equity_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+            equity_entry.id: tapescript.tools.make_taproot_witness_keyspend(
                 seed, equity_entry.get_sigfields(entries=entries), committed_script
             ).bytes,
-            liability_acct.id: tapescript.tools.make_taproot_witness_keyspend(
+            liability_entry.id: tapescript.tools.make_taproot_witness_keyspend(
                 seed, liability_entry.get_sigfields(entries=entries), committed_script
             ).bytes,
         }

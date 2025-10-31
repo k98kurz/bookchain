@@ -125,7 +125,8 @@ class Transaction(AsyncHashedModel):
             balance for each ledger; if a required auth script is missing; or
             if any of the entries is contained within an existing Transaction.
             If reload is set to True, entries and accounts will be reloaded
-            from the database.
+            from the database. Auth scripts can be provided by account ID or
+            by entry ID; scoping by entry ID will take precedence.
         """
         tert(type(self.auth_scripts) is dict,
             'auth_scripts must be dict mapping account ID to authorizing tapescript bytecode')
@@ -140,8 +141,9 @@ class Transaction(AsyncHashedModel):
         ledgers = {}
         entry: Entry
         for entry in self.entries:
-            vert(entry.account_id in self.auth_scripts or not entry.account.locking_scripts
-                 or entry.type not in entry.account.locking_scripts,
+            vert((entry.account_id in self.auth_scripts or entry.id in self.auth_scripts)
+                or not entry.account.locking_scripts
+                or entry.type not in entry.account.locking_scripts,
                 f"missing auth script for account {entry.account_id} ({entry.account.name})")
             if reload:
                 await entry.account().reload()
@@ -175,7 +177,7 @@ class Transaction(AsyncHashedModel):
 
             if not acct.locking_scripts or entry.type not in acct.locking_scripts:
                 continue
-            if acct.id not in self.auth_scripts:
+            if acct.id not in self.auth_scripts and entry.id not in self.auth_scripts:
                 return False
             runtime = tapescript_runtime.get(entry.id, {**tapescript_runtime})
             if 'cache' not in runtime:
@@ -188,7 +190,11 @@ class Transaction(AsyncHashedModel):
                         entries=self.entries,
                     )
                 }
-            if not acct.validate_script(entry.type, self.auth_scripts[acct.id], runtime):
+
+            # validate auth scripts by entry ID or by account ID
+            auth_script = self.auth_scripts.get(entry.id, self.auth_scripts.get(acct.id, b''))
+
+            if not acct.validate_script(entry.type, auth_script, runtime):
                 return False
 
             # issue #6: include txn details in cache
