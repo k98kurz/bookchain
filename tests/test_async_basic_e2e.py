@@ -168,9 +168,19 @@ class TestAsyncBasicE2E(unittest.TestCase):
         run(equity_entry.save())
         run(asset_entry.save())
         run(txn.save())
+        # add timestamps to entries
+        equity_entry.timestamp = txn.timestamp
+        run(equity_entry.save())
+        asset_entry.timestamp = txn.timestamp
+        run(asset_entry.save())
         # reload txn from database and validate it
         txn: asyncql.Transaction = run(asyncql.Transaction.find(txn.id))
         assert run(txn.validate(reload=True))
+        # reload entries from database and ensure the timestamps were saved
+        equity_entry: asyncql.Entry = run(asyncql.Entry.find(equity_entry.id))
+        assert equity_entry.timestamp == txn.timestamp, equity_entry.timestamp
+        asset_entry: asyncql.Entry = run(asyncql.Entry.find(asset_entry.id))
+        assert asset_entry.timestamp == txn.timestamp, asset_entry.timestamp
 
         # check balances
         assert run(equity_acct.balance()) == 10_000_00, run(equity_acct.balance())

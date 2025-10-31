@@ -14,9 +14,10 @@ class Entry(HashedModel):
     table: str = 'entries'
     id_column: str = 'id'
     columns: tuple[str] = (
-        'id', 'type', 'amount', 'nonce', 'account_id', 'details', 'description'
+        'id', 'type', 'amount', 'nonce', 'account_id', 'details', 'description',
+        'timestamp'
     )
-    columns_excluded_from_hash: tuple[str] = ('description',)
+    columns_excluded_from_hash: tuple[str] = ('description', 'timestamp',)
     id: str
     type: str
     amount: int
@@ -24,6 +25,7 @@ class Entry(HashedModel):
     account_id: str
     details: bytes
     description: str|None
+    timestamp: str|None
     account: RelatedModel
     transactions: RelatedCollection
 

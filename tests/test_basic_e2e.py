@@ -165,11 +165,21 @@ class TestBasicE2E(unittest.TestCase):
         )
         assert txn.validate()
         txn.save()
+        # add timestamps to entries
+        equity_entry.timestamp = txn.timestamp
+        equity_entry.save()
+        asset_entry.timestamp = txn.timestamp
+        asset_entry.save()
         # reload txn from database and validate it
         txn: models.Transaction = models.Transaction.find(txn.id)
         assert txn.validate(reload=True)
         assert len(asset_entry.transactions) == 1
         assert asset_entry.transactions[0].id == txn.id, asset_entry.transactions
+        # reload entries from database and ensure the timestamps were saved
+        equity_entry: models.Entry = models.Entry.find(equity_entry.id)
+        assert equity_entry.timestamp == txn.timestamp, equity_entry.timestamp
+        asset_entry: models.Entry = models.Entry.find(asset_entry.id)
+        assert asset_entry.timestamp == txn.timestamp, asset_entry.timestamp
 
         # check balances
         assert equity_acct.balance() == 10_000_00, equity_acct.balance()
