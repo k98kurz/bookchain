@@ -104,7 +104,7 @@ class Correspondence(HashedModel):
             ledger: Ledger
             acct = ledger.accounts().query().equal(
                 type=AccountType.EQUITY.value
-            ).first()
+            ).starts_with(name='General Equity').first()
             if acct is not None:
                 acct.ledger().reload()
                 accounts[acct.ledger.identity_id][acct.type] = acct

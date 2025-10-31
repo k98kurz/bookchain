@@ -103,7 +103,7 @@ class Correspondence(AsyncHashedModel):
             ledger: Ledger
             acct = await ledger.accounts().query().equal(
                 type=AccountType.EQUITY.value
-            ).first()
+            ).starts_with(name='General Equity').first()
             if acct is not None:
                 await acct.ledger().reload()
                 accounts[acct.ledger.identity_id][acct.type] = acct
