@@ -27,6 +27,9 @@ Currency.ledgers = has_many(Currency, Ledger, 'currency_id')
 
 Correspondence.ledgers = contains(Correspondence, Ledger, 'ledger_ids')
 
+Account.correspondence = belongs_to(Account, Correspondence, 'correspondence_id')
+Correspondence.accounts = has_many(Correspondence, Account, 'correspondence_id')
+
 Identity.correspondences = within(Identity, Correspondence, 'identity_ids')
 Correspondence.identities = contains(Correspondence, Identity, 'identity_ids')
 
@@ -133,4 +136,3 @@ def publish_migrations(
 def automigrate(migration_folder_path: str, db_file_path: str):
     """Executes the sqloquent automigrate tool."""
     sqloquent.tools.automigrate(migration_folder_path, db_file_path)
-

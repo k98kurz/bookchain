@@ -56,33 +56,22 @@ class Identity(AsyncHashedModel):
                     correspondents.append(identity)
         return correspondents
 
-    async def get_correspondent_accounts(self, correspondent: Identity) -> list[Account]:
+    async def get_correspondent_accounts(
+            self, correspondent: Identity, reload: bool = False
+        ) -> list[Account]:
         """Get the nosto and vostro accounts for a correspondent."""
+        if reload:
+            await self.correspondences().reload()
+
         accounts = []
-        ledger: Ledger
-        for ledger in await Ledger.query().is_in('identity_id', [self.id, correspondent.id]).get():
-            nostros = await Account.query({
-                'ledger_id': ledger.id,
-                'type': AccountType.NOSTRO_ASSET.value,
-            }).contains('name', correspondent.id).get()
-            if len(nostros):
-                accounts.extend(nostros)
-            vostros = await Account.query({
-                'ledger_id': ledger.id,
-                'type': AccountType.VOSTRO_LIABILITY.value,
-            }).contains('name', correspondent.id).get()
-            if len(vostros):
-                accounts.extend(vostros)
-            nostros = await Account.query({
-                'ledger_id': ledger.id,
-                'type': AccountType.NOSTRO_ASSET.value,
-            }).contains('name', self.id).get()
-            if len(nostros):
-                accounts.extend(nostros)
-            vostros = await Account.query({
-                'ledger_id': ledger.id,
-                'type': AccountType.VOSTRO_LIABILITY.value,
-            }).contains('name', self.id).get()
-            if len(vostros):
-                accounts.extend(vostros)
+        correspondence = [
+            c for c in self.correspondences if correspondent.id in c.identity_ids
+        ][0]
+        for _, accts in (await correspondence.get_accounts(reload=reload)).items():
+            for acct_type, acct in accts.items():
+                if acct_type is AccountType.NOSTRO_ASSET:
+                    accounts.append(acct)
+                if acct_type is AccountType.VOSTRO_LIABILITY:
+                    accounts.append(acct)
+
         return accounts

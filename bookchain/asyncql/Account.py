@@ -20,7 +20,8 @@ class Account(AsyncHashedModel):
     id_column: str = 'id'
     columns: tuple[str] = (
         'id', 'name', 'type', 'ledger_id', 'parent_id', 'code',
-        'locking_scripts', 'category_id', 'details', 'active', 'description'
+        'correspondence_id', 'locking_scripts', 'category_id', 'details',
+        'active', 'description'
     )
     columns_excluded_from_hash: tuple[str] = ('active', 'description',)
     id: str
@@ -29,6 +30,7 @@ class Account(AsyncHashedModel):
     ledger_id: str
     parent_id: str
     code: str|None
+    correspondence_id: str|None
     locking_scripts: bytes|None
     category_id: str|None
     details: bytes|None
@@ -36,6 +38,7 @@ class Account(AsyncHashedModel):
     description: str|None
     ledger: AsyncRelatedModel
     parent: AsyncRelatedModel
+    correspondence: AsyncRelatedModel
     category: AsyncRelatedModel
     children: AsyncRelatedCollection
     entries: AsyncRelatedCollection

@@ -38,6 +38,7 @@ class Correspondence(AsyncHashedModel):
     identities: AsyncRelatedCollection
     ledgers: AsyncRelatedCollection
     rollups: AsyncRelatedCollection
+    accounts: AsyncRelatedCollection
 
     @property
     def details(self) -> dict:
@@ -77,24 +78,27 @@ class Correspondence(AsyncHashedModel):
         """Returns the txru_lock directly from the details field."""
         return self.details.get('txru_lock', None)
 
-    async def get_accounts(self) -> dict[str, dict[AccountType, Account]]:
+    async def get_accounts(self, reload: bool = True) -> dict[str, dict[AccountType, Account]]:
         """Loads the relevant nostro and vostro Accounts for the
-            Identities that are part of the Correspondence.
+            Identities that are part of the Correspondence, as well as
+            the equity Accounts for each Identity, returning a dict of
+            the form { identity.id: { AccountType: Account }}.
         """
-        await self.ledgers().reload()
-        await self.identities().reload()
+        if reload:
+            await self.ledgers().reload()
+            await self.accounts().reload()
+            await self.identities().reload()
+
         accounts = {
             identity.id: {}
             for identity in self.identities
         }
-        for id1 in self.identities:
-            id1: Identity
-            for identity in [i for i in self.identities if i.id != id1.id]:
-                identity: Identity
-                for acct in await id1.get_correspondent_accounts(identity):
-                    await acct.ledger().reload()
-                    if acct.ledger.identity_id == identity.id:
-                        accounts[identity.id][acct.type] = acct
+        for acct in self.accounts:
+            acct: Account
+            if acct.type is AccountType.NOSTRO_ASSET:
+                accounts[acct.ledger.identity_id][AccountType.NOSTRO_ASSET] = acct
+            if acct.type is AccountType.VOSTRO_LIABILITY:
+                accounts[acct.ledger.identity_id][AccountType.VOSTRO_LIABILITY] = acct
         for ledger in self.ledgers:
             ledger: Ledger
             acct = await ledger.accounts().query().equal(
@@ -125,6 +129,7 @@ class Correspondence(AsyncHashedModel):
                     'name': f'Receivable from (Nostro with) {identity2.name} ({identity2.id})',
                     'type': AccountType.NOSTRO_ASSET.value,
                     'ledger_id': ledger.id,
+                    'correspondence_id': self.id,
                 })
                 nostro.details = identity2.id
                 nostro.locking_scripts = {
@@ -135,6 +140,7 @@ class Correspondence(AsyncHashedModel):
                     'name': f'Payable to (Vostro for) {identity2.name} ({identity2.id})',
                     'type': AccountType.VOSTRO_LIABILITY.value,
                     'ledger_id': ledger.id,
+                    'correspondence_id': self.id,
                 })
                 vostro.details = identity2.id
                 vostro.locking_scripts = {
@@ -159,23 +165,14 @@ class Correspondence(AsyncHashedModel):
              f'payer ({payer.name}, {payer.id}) not in correspondence identities')
         vert(payee.id in self.identity_ids,
              f'payee ({payee.name}, {payee.id}) not in correspondence identities')
-        await payer.ledgers().reload()
-        await payee.ledgers().reload()
-        payer_ledger: Ledger = [l for l in payer.ledgers if l.id in self.ledger_ids][0]
-        payee_ledger: Ledger = [l for l in payee.ledgers if l.id in self.ledger_ids][0]
-        await payer_ledger.accounts().reload()
-        await payee_ledger.accounts().reload()
-        payer_equity_acct: Account = [
-            a for a in payer_ledger.accounts if a.type is AccountType.EQUITY
-        ][0]
-        payee_equity_acct: Account = [
-            a for a in payee_ledger.accounts if a.type is AccountType.EQUITY
-        ][0]
+
         accts = await self.get_accounts()
         payer_nostro_acct = accts[payer.id][AccountType.NOSTRO_ASSET]
         payer_vostro_acct = accts[payer.id][AccountType.VOSTRO_LIABILITY]
         payee_nostro_acct = accts[payee.id][AccountType.NOSTRO_ASSET]
         payee_vostro_acct = accts[payee.id][AccountType.VOSTRO_LIABILITY]
+        payer_equity_acct = accts[payer.id][AccountType.EQUITY]
+        payee_equity_acct = accts[payee.id][AccountType.EQUITY]
 
         payer_equity_entry = Entry({
             'nonce': txn_nonce,

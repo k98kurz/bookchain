@@ -26,6 +26,9 @@ Currency.ledgers = async_has_many(Currency, Ledger, 'currency_id')
 
 Correspondence.ledgers = async_contains(Correspondence, Ledger, 'ledger_ids')
 
+Account.correspondence = async_belongs_to(Account, Correspondence, 'correspondence_id')
+Correspondence.accounts = async_has_many(Correspondence, Account, 'correspondence_id')
+
 Identity.correspondences = async_within(Identity, Correspondence, 'identity_ids')
 Correspondence.identities = async_contains(Correspondence, Identity, 'identity_ids')
 

@@ -291,7 +291,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
         assert len(correspondence.ledgers)
 
         # set up correspondent accounts for alice
-        cor_accts1 = run(alice.get_correspondent_accounts(bob))
+        cor_accts1 = run(alice.get_correspondent_accounts(bob, reload=True))
         assert len(cor_accts1) == 0, cor_accts1
         nostro_alice = asyncql.Account()
         nostro_alice.name = f'Receivable from {bob.name} ({bob.id})'
@@ -302,6 +302,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
             asyncql.EntryType.CREDIT: self.locking_script_alice,
             asyncql.EntryType.DEBIT: self.locking_script_bob,
         }
+        nostro_alice.correspondence_id = correspondence.id
         run(nostro_alice.save())
 
         vostro_alice = asyncql.Account()
@@ -313,12 +314,13 @@ class TestCorrespondencesE2E(unittest.TestCase):
             asyncql.EntryType.CREDIT: self.locking_script_alice,
             asyncql.EntryType.DEBIT: self.locking_script_bob,
         }
+        vostro_alice.correspondence_id = correspondence.id
         run(vostro_alice.save())
-        cor_accts1 = run(alice.get_correspondent_accounts(bob))
+        cor_accts1 = run(alice.get_correspondent_accounts(bob, reload=True))
         assert len(cor_accts1) == 2, cor_accts1
 
         # set up correspondent accounts for bob
-        cor_accts2 = run(bob.get_correspondent_accounts(alice))
+        cor_accts2 = run(bob.get_correspondent_accounts(alice, reload=True))
         assert len(cor_accts2) == 2, cor_accts2
 
         nostro_bob = asyncql.Account()
@@ -330,6 +332,7 @@ class TestCorrespondencesE2E(unittest.TestCase):
             asyncql.EntryType.CREDIT: self.locking_script_bob,
             asyncql.EntryType.DEBIT: self.locking_script_alice,
         }
+        nostro_bob.correspondence_id = correspondence.id
         run(nostro_bob.save())
 
         vostro_bob = asyncql.Account()
@@ -341,8 +344,9 @@ class TestCorrespondencesE2E(unittest.TestCase):
             asyncql.EntryType.CREDIT: self.locking_script_bob,
             asyncql.EntryType.DEBIT: self.locking_script_alice,
         }
+        vostro_bob.correspondence_id = correspondence.id
         run(vostro_bob.save())
-        cor_accts2 = run(bob.get_correspondent_accounts(alice))
+        cor_accts2 = run(bob.get_correspondent_accounts(alice, reload=True))
         assert len(cor_accts2) == 4, cor_accts2
         for acct in cor_accts2:
             print(f"{acct.ledger_id} {acct.name} {acct.type.name}")
