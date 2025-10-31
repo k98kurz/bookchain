@@ -6,6 +6,7 @@ from .ArchivedTransaction import ArchivedTransaction
 from .Correspondence import Correspondence
 from .Entry import Entry, EntryType
 from .Identity import Identity
+from ..helpers import parse_timestamp
 import packify
 
 
@@ -155,6 +156,19 @@ class Transaction(AsyncHashedModel):
             vert(balances['Cr'] == balances['Dr'],
                 f"ledger {ledger_id} unbalanced: {balances['Cr']} Cr != {balances['Dr']} Dr")
 
+        # issue #6: include txn details in cache
+        cache = {
+            "e_ids": [e.id.encode('utf-8') for e in self.entries],
+            "e_type": [e.type is EntryType.CREDIT for e in self.entries],
+            "e_amount": [e.amount for e in self.entries],
+            "e_nonce": [e.nonce for e in self.entries],
+            "e_acct_id": [e.account_id.encode('utf-8') for e in self.entries],
+        }
+        if self.timestamp:
+            cache["timestamp"] = parse_timestamp(self.timestamp)
+            if not cache["timestamp"]:
+                del cache["timestamp"]
+
         # next check that all necessary authorizations are provided
         for entry in self.entries:
             acct = entry.account
@@ -176,6 +190,13 @@ class Transaction(AsyncHashedModel):
                 }
             if not acct.validate_script(entry.type, self.auth_scripts[acct.id], runtime):
                 return False
+
+            # issue #6: include txn details in cache
+            runtime['cache'] = {
+                **cache,
+                "e_idx": cache["e_ids"].index(entry.id.encode('utf-8')),
+                **runtime['cache'],
+            }
 
         # finally check that correspondent accounting is not violated
         if len(ledgers) > 1:
