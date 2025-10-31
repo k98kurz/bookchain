@@ -318,7 +318,7 @@ class TestTxRollupE2E(unittest.TestCase):
         assert txrollup.verify_txn_inclusion_proof(txn2.id, proof)
 
         # test empty ArchivedTransaction and ArchivedEntry
-        
+
         (asyncql.ArchivedTransaction()).details
         (asyncql.ArchivedTransaction()).auth_scripts
         (asyncql.ArchivedEntry()).details
@@ -439,13 +439,13 @@ class TestTxRollupE2E(unittest.TestCase):
         _, entries = run(correspondence.pay_correspondent(alice, bob, 200, os.urandom(16)))
         txn = run(asyncql.Transaction.prepare(entries, str(time()), auth_scripts={
             equity_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[0].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[0].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             vostro_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[2].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[2].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             nostro_acct_bob.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[3].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[3].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
         }))
         run(txn.save())
@@ -456,13 +456,13 @@ class TestTxRollupE2E(unittest.TestCase):
         entries, _ = run(correspondence.pay_correspondent(bob, alice, 100, os.urandom(16)))
         txn2 = run(asyncql.Transaction.prepare(entries, str(time()), auth_scripts={
             equity_acct_bob.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_bob, entries[0].get_sigfields(), self.committed_script_bob
+                self.seed_bob, entries[0].get_sigfields(entries=entries), self.committed_script_bob
             ).bytes,
             nostro_acct_bob.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_bob, entries[2].get_sigfields(), self.committed_script_bob
+                self.seed_bob, entries[2].get_sigfields(entries=entries), self.committed_script_bob
             ).bytes,
             vostro_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_bob, entries[3].get_sigfields(), self.committed_script_bob
+                self.seed_bob, entries[3].get_sigfields(entries=entries), self.committed_script_bob
             ).bytes,
         }))
         run(txn2.save())

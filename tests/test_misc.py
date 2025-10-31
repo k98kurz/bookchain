@@ -140,7 +140,7 @@ class TestMisc(unittest.TestCase):
         assert models.Account.query().count() == 0
 
     def test_parse_timestamp(self):
-        assert helpers.parse_timestamp('') is 0
+        assert helpers.parse_timestamp('') == 0
         assert type(helpers.parse_timestamp('1234567890')) is int
         assert type(helpers.parse_timestamp('1234567890.123')) is int
         assert type(helpers.parse_timestamp('2023-01-01T00:00:00Z')) is int

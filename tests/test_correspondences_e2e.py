@@ -390,19 +390,20 @@ class TestCorrespondencesE2E(unittest.TestCase):
         })
         asset_entry_bob.details = 'Debit Bob Asset'
         asset_entry_bob.account = nostro_bob
+        entries = [equity_entry_alice, liability_entry_alice, equity_entry_bob, asset_entry_bob]
         auth_scripts = {
             equity_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                alice.seed, equity_entry_alice.get_sigfields(), self.committed_script_alice
+                alice.seed, equity_entry_alice.get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             vostro_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                alice.seed, liability_entry_alice.get_sigfields(), self.committed_script_alice
+                alice.seed, liability_entry_alice.get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             nostro_bob.id: tapescript.tools.make_taproot_witness_keyspend(
-                alice.seed, asset_entry_bob.get_sigfields(), self.committed_script_alice
+                alice.seed, asset_entry_bob.get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
         }
         txn = models.Transaction.prepare(
-            [equity_entry_alice, liability_entry_alice, equity_entry_bob, asset_entry_bob],
+            entries,
             str(time()), auth_scripts
         )
         txn.save()
@@ -444,20 +445,21 @@ class TestCorrespondencesE2E(unittest.TestCase):
         })
         liability_entry_bob.details = 'Debit Bob Liability'
         liability_entry_bob.account = vostro_bob
+        entries = [equity_entry_alice, liability_entry_alice, equity_entry_bob, liability_entry_bob]
         auth_scripts = {
             equity_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                alice.seed, equity_entry_alice.get_sigfields(), self.committed_script_alice
+                alice.seed, equity_entry_alice.get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             vostro_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                alice.seed, liability_entry_alice.get_sigfields(), self.committed_script_alice
+                alice.seed, liability_entry_alice.get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             vostro_bob.id: tapescript.tools.make_taproot_witness_keyspend(
-                alice.seed, liability_entry_bob.get_sigfields(), self.committed_script_alice
+                alice.seed, liability_entry_bob.get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
         }
         with self.assertRaises(AssertionError) as e:
             txn = models.Transaction.prepare(
-                [equity_entry_alice, liability_entry_alice, equity_entry_bob, liability_entry_bob],
+                entries,
                 str(time()), auth_scripts
             )
         assert 'validation failed' in str(e.exception)
@@ -634,13 +636,13 @@ class TestCorrespondencesE2E(unittest.TestCase):
         assert len([e for e in entries if e.account_id == vostro_acct_bob.id]) == 1
         txn = models.Transaction.prepare(entries, str(time()), auth_scripts={
             equity_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[0].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[0].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             nostro_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[2].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[2].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             vostro_acct_bob.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[3].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[3].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
         })
         assert models.Entry.query({'id': entries[0].id}).count() == 0
@@ -655,13 +657,13 @@ class TestCorrespondencesE2E(unittest.TestCase):
         assert len([e for e in entries if e.account_id == nostro_acct_bob.id]) == 1
         txn = models.Transaction.prepare(entries, str(time()), auth_scripts={
             equity_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[0].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[0].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             vostro_acct_alice.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[2].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[2].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
             nostro_acct_bob.id: tapescript.tools.make_taproot_witness_keyspend(
-                self.seed_alice, entries[3].get_sigfields(), self.committed_script_alice
+                self.seed_alice, entries[3].get_sigfields(entries=entries), self.committed_script_alice
             ).bytes,
         })
         txn.save()
