@@ -43,9 +43,7 @@ class AccountCategory(AsyncHashedModel):
     @classmethod
     async def insert_many(cls, items: list[dict], /, *, suppress_events: bool = False) -> int:
         """Ensure items are encoded before inserting."""
-        for item in items:
-            if 'ledger_type' in item and isinstance(item['ledger_type'], LedgerType):
-                item['ledger_type'] = item['ledger_type'].value
+        items = [cls._encode(item) for item in items]
         return await super().insert_many(items, suppress_events=suppress_events)
 
     async def update(self, updates: dict, /, *, suppress_events: bool = False) -> AccountCategory:

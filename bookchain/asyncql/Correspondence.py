@@ -26,7 +26,8 @@ class Correspondence(AsyncHashedModel):
     table: str = 'correspondences'
     id_column: str = 'id'
     columns: tuple[str] = (
-        'id', 'identity_ids', 'ledger_ids', 'details', 'signatures', 'description'
+        'id', 'identity_ids', 'ledger_ids', 'details', 'signatures',
+        'description'
     )
     columns_excluded_from_hash: tuple[str] = ('signatures', 'description')
     id: str
