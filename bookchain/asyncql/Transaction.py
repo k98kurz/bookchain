@@ -191,18 +191,18 @@ class Transaction(AsyncHashedModel):
                     )
                 }
 
-            # validate auth scripts by entry ID or by account ID
-            auth_script = self.auth_scripts.get(entry.id, self.auth_scripts.get(acct.id, b''))
-
-            if not acct.validate_script(entry.type, auth_script, runtime):
-                return False
-
             # issue #6: include txn details in cache
             runtime['cache'] = {
                 **cache,
                 "e_idx": cache["e_ids"].index(entry.id.encode('utf-8')),
                 **runtime['cache'],
             }
+
+            # validate auth scripts by entry ID or by account ID
+            auth_script = self.auth_scripts.get(entry.id, self.auth_scripts.get(acct.id, b''))
+
+            if not acct.validate_script(entry.type, auth_script, runtime):
+                return False
 
         # finally check that correspondent accounting is not violated
         if len(ledgers) > 1:
