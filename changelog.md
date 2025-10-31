@@ -24,6 +24,11 @@
 - Updated `Correspondence` system to require a "General Equity" account for each
   participating `Identity`/`Ledger`.
 - Added nullable, non-hashed `Entry.timestamp` column to make querying easier.
+- `Customer` and `Vendor`: `details` column is now a packify.SerializableType
+  stored as a blob.
+- Bug fix: `Entry.insert_many()` and `ArchivedEntry.insert_many()` did not
+  function and had been skipped in tests. They now work as expected and are
+  covered by e2e test suite.
 
 ## 0.3.3
 
