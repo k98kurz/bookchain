@@ -261,6 +261,23 @@ class TestAsyncBasicE2E(unittest.TestCase):
         run(restored.save())
         assert run(asyncql.Identity.find(identity.id)) is not None
 
+        # test Entry.insert_many
+        entries = run(asyncql.Entry.insert_many([
+            {
+                'type': asyncql.EntryType.CREDIT,
+                'account_id': equity_acct.id,
+                'amount': 10_000_00,
+                'nonce': os.urandom(16),
+            },
+            {
+                'type': asyncql.EntryType.DEBIT,
+                'account_id': asset_acct.id,
+                'amount': 10_000_00,
+                'nonce': os.urandom(16),
+            },
+        ]))
+        assert entries == 2, entries
+
         # test additional models
         async def test_async_additional_models():
             customer = asyncql.Customer({

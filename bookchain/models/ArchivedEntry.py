@@ -85,7 +85,7 @@ class ArchivedEntry(HashedModel):
     @classmethod
     def insert_many(cls, items: list[dict]) -> int:
         """Ensure data is encoded before inserting."""
-        items = [cls._encode(data) for data in list]
+        items = [cls._encode(data) for data in items]
         return super().insert_many(items)
 
     @classmethod

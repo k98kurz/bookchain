@@ -422,6 +422,21 @@ class TestTxRollupE2E(unittest.TestCase):
         txrollup3 = run(asyncql.TxRollup.prepare([], txrollup2.id, ledger=ledger))
         assert run(txrollup3.validate())
 
+        # test ArchivedEntry.insert_many
+        archived_entries = run(asyncql.ArchivedEntry.insert_many([
+            {
+                'type': asyncql.EntryType.CREDIT,
+                'account_id': equity_acct.id,
+                'amount': 10_000_00,
+            },
+            {
+                'type': asyncql.EntryType.DEBIT,
+                'account_id': asset_acct.id,
+                'amount': 10_000_00,
+            },
+        ]))
+        assert archived_entries == 2, archived_entries
+
     def test_with_correspondence_e2e(self):
         run(self.setup_currency())
         alice, bob = run(self.setup_identities())

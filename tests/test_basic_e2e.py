@@ -260,6 +260,23 @@ class TestBasicE2E(unittest.TestCase):
         restored.save()
         assert models.Identity.find(identity.id) is not None
 
+        # test Entry.insert_many
+        entries = models.Entry.insert_many([
+            {
+                'type': models.EntryType.CREDIT,
+                'account_id': equity_acct.id,
+                'amount': 10_000_00,
+                'nonce': os.urandom(16),
+            },
+            {
+                'type': models.EntryType.DEBIT,
+                'account_id': asset_acct.id,
+                'amount': 10_000_00,
+                'nonce': os.urandom(16),
+            },
+        ])
+        assert entries == 2, entries
+
         # test additional models
         customer = models.Customer({
             'name': 'John Doe',

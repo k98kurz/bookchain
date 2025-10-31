@@ -418,6 +418,21 @@ class TestTxRollupE2E(unittest.TestCase):
         txrollup3 = models.TxRollup.prepare([], txrollup2.id, ledger=ledger)
         assert txrollup3.validate()
 
+        # test ArchivedEntry.insert_many
+        archived_entries = models.ArchivedEntry.insert_many([
+            {
+                'type': models.EntryType.CREDIT,
+                'account_id': equity_acct.id,
+                'amount': 10_000_00,
+            },
+            {
+                'type': models.EntryType.DEBIT,
+                'account_id': asset_acct.id,
+                'amount': 10_000_00,
+            },
+        ])
+        assert archived_entries == 2, archived_entries
+
     def test_with_correspondence_e2e(self):
         self.setup_currency()
         alice, bob = self.setup_identities()
