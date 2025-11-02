@@ -65,7 +65,7 @@ script for access control, and optional details.
 
 `Entry` represents an entry in the general ledger for a given `Account`. It
 includes a type (one of the `EntryType` enum options), an amount, a nonce, the
-`Account` id, and optional details.
+`Account` id, and optional details, description, and timestamp.
 
 `EntryType` is an enum representing the valid entry types. The options are
 CREDIT and DEBIT.
@@ -100,6 +100,12 @@ use.)
 
 `Correspondence` represents a correspondent credit relationship between several
 `Identity`s.
+
+`Customer` and `Vendor` are optional classes for storing customer and vendor
+information, respectively. They include a name, code, optional details, and
+optional description. There are no relations defined for these classes.
+
+### Relations
 
 - `Identity` has many `Ledger`s and is within `Correspondence`s
 - `Ledger` belongs to `Identity` and `Currency`, has many `Account`s, is within
