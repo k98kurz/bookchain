@@ -582,9 +582,9 @@ Convert the amount from a Decimal representation.
 ##### `get_units(amount: int) -> tuple[int]:`
 
 Get the full units and subunits. The number of subunit figures will be equal to
-unit_divisions; e.g. if base=10 and unit_divisions=2, get_units(200) will return
-(2, 0, 0); if base=60 and unit_divisions=2, get_units(200) will return (0, 3,
-20).
+`unit_divisions`; e.g. if `base=10` and `unit_divisions=2`, `get_units(200)`
+will return `(2, 0, 0)`; if `base=60` and `unit_divisions=2`, `get_units(200)`
+will return `(0, 3, 20)`.
 
 ##### `format(amount: int, /, *, divider: str = '.', use_fx_symbol: bool = False, use_postfix: bool = False, use_prefix: bool = True, decimal_places: int = 2, use_decimal: bool = True) -> str:`
 
@@ -929,5 +929,4 @@ TypeError if details contains unseriazliable type.
 
 Set the connection info for all models to use the specified sqlite3 database
 file path.
-
 
