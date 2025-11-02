@@ -128,11 +128,12 @@ guaranteeing a unique, deterministic ID for each unique record.
 Whenever something is deleted, it will be encoded and inserted into the
 `deleted_models` table to maintain an audit trail.
 
-Accounts may be created with locking scripts, which will require associated
-Entries to provide valid auth scripts. These scripts are executed using
-tapescript. If some tapescript runtime values are required for validation,
-e.g. cache or plugins, they can be saved in Transaction.details and passed to
-`Transaction.validate` and `Account.validate_script`.
+Accounts may be created with locking scripts, which will require the Transaction
+to include valid auth scripts for the associated Entries. These scripts are
+executed using tapescript. If some tapescript runtime values are required for
+validation, e.g. cache or plugins, they can be saved in `Transaction.details`
+and passed to `Transaction.prepare`, `Transaction.validate`, and
+`Account.validate_script`.
 
 `TxRollup`s include a `tx_root` which is the root hash of the Merkle tree of
 the `Transaction`s they contain. This allows for efficient inclusion proofs
@@ -144,6 +145,30 @@ pubkey (a 2-of-2 multisig lock will be generated as the default `txru_lock` if
 one was not set). This system allows for old `Transaction`s to be trimmed from
 the local database while ensuring that all parties validated the aggregate
 account balance changes of the trimmed `Transaction`s were preserved.
+
+#### Tapescript runtime
+
+When an auth script is being validated, the tapescript runtime cache will
+consist of the following:
+
+- "sigfield1": the current entry ID in byte form
+- "sigfield2": the catenation of the sorted IDs of all entries, allowing
+  locking scripts to require binding to the full transaction or just a
+  single entry (`sigflags='02'` to allow masking out sigfield2).
+- "timestamp": `parse_timestamp(transaction.timestamp)`, if it can be
+  parsed; otherwise left unset.
+- "e_idx": the index of the current `Entry` in the lists of entry values
+- "e_ids": the `transaction.entry_ids` list of `Entry` IDs
+- "e_type": a list of bools for each `Entry` where `True` means it is credit
+  and `False` means it is a debit entry
+- "e_amount": the list of `Entry.amount`s
+- "e_nonce": the list of `Entry.nonce`s
+- "e_acct_id": the list of `Entry.account_id`s
+
+Advanced locking scripts can be written that programmatically access these
+values using the `val s"{name}"` syntax, e.g. `val s"e_idx" @= idx 1`. The
+general expectation is that most locking scripts will be simple signature checks,
+taproot, graftroot, or delegate key locks.
 
 ## Installation and Setup
 
