@@ -46,10 +46,10 @@ class Currency(HashedModel):
 
     def get_units(self, amount: int) -> tuple[int,]:
         """Get the full units and subunits. The number of subunit
-            figures will be equal to unit_divisions; e.g. if base=10
-            and unit_divisions=2, get_units(200) will return (2, 0, 0);
-            if base=60 and unit_divisions=2, get_units(200) will return
-            (0, 3, 20).
+            figures will be equal to `unit_divisions`; e.g. if `base=10`
+            and `unit_divisions=2`, `get_units(200)` will return
+            `(2, 0, 0)`; if `base=60` and `unit_divisions=2`,
+            `get_units(200)` will return `(0, 3, 20)`.
         """
         def get_subunits(amount, base, unit_divisions):
             units_and_change = divmod(amount, base ** unit_divisions)
@@ -95,7 +95,7 @@ class Currency(HashedModel):
                 p = str(u)
                 while len(p) < decimal_places:
                     p = "0" + p
-                amount = f"{amount}:{p}"
+                amount = f"{amount}{divider}{p}"
             amount = amount[1:]
 
         if self.postfix_symbol and use_postfix:

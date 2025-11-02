@@ -86,6 +86,8 @@ class TestMisc(unittest.TestCase):
         assert currency.get_units(amount) == (2, 2, 3)
         assert currency.format(amount, use_decimal=False, divider=':') == 'Ħ02:02:03', \
             currency.format(amount, use_decimal=False, divider=':')
+        assert currency.format(amount, use_decimal=False, divider='.') == 'Ħ02.02.03', \
+            currency.format(amount, use_decimal=False, divider='.')
 
         amount = Decimal('1.51')
         assert currency.from_decimal(amount) == 5436, currency.from_decimal(amount)
@@ -122,6 +124,8 @@ class TestMisc(unittest.TestCase):
         assert currency.get_units(amount) == (2, 2, 3)
         assert currency.format(amount, use_decimal=False, divider=':') == 'Ħ02:02:03', \
             currency.format(amount, use_decimal=False, divider=':')
+        assert currency.format(amount, use_decimal=False, divider='.') == 'Ħ02.02.03', \
+            currency.format(amount, use_decimal=False, divider='.')
 
         amount = Decimal('1.51')
         assert currency.from_decimal(amount) == 5436, currency.from_decimal(amount)
