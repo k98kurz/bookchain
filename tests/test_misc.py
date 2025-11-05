@@ -68,6 +68,7 @@ class TestMisc(unittest.TestCase):
         assert currency.get_units(123) == (1, 23), currency.get_units(123)
         assert currency.to_decimal(123) == amount, currency.to_decimal(123)
         assert currency.from_decimal(amount) == 123, currency.from_decimal(amount)
+        assert currency.parse('$1.23') == 123, currency.parse('$1.23')
 
         currency = models.Currency({
             'name': 'Mean Minute/Hour',
@@ -83,11 +84,15 @@ class TestMisc(unittest.TestCase):
         assert currency.to_decimal(5011) == Decimal(5011)/Decimal(60*60)
 
         amount = (60**2)*2 + (60**1)*2 + (60**0)*3
+        amount_str = 'Ħ02:02:03'
+        amount_str2 = 'Ħ02.02.03'
         assert currency.get_units(amount) == (2, 2, 3)
-        assert currency.format(amount, use_decimal=False, divider=':') == 'Ħ02:02:03', \
-            currency.format(amount, use_decimal=False, divider=':')
-        assert currency.format(amount, use_decimal=False, divider='.') == 'Ħ02.02.03', \
-            currency.format(amount, use_decimal=False, divider='.')
+        assert currency.format(amount, use_decimal=False, divider=':') == amount_str, \
+            (currency.format(amount, use_decimal=False, divider=':'), amount)
+        assert currency.format(amount, use_decimal=False, divider='.') == amount_str2, \
+            (currency.format(amount, use_decimal=False, divider='.'), amount)
+        assert currency.parse(amount_str, use_decimal=False, divider=':') == amount, \
+            (currency.parse(amount_str, use_decimal=False, divider=':'), amount)
 
         amount = Decimal('1.51')
         assert currency.from_decimal(amount) == 5436, currency.from_decimal(amount)
@@ -106,6 +111,7 @@ class TestMisc(unittest.TestCase):
         assert currency.get_units(123) == (1, 23), currency.get_units(123)
         assert currency.to_decimal(123) == amount, currency.to_decimal(123)
         assert currency.from_decimal(amount) == 123, currency.from_decimal(amount)
+        assert currency.parse('$1.23') == 123, currency.parse('$1.23')
 
         currency = asyncql.Currency({
             'name': 'Mean Minute/Hour',
@@ -121,11 +127,15 @@ class TestMisc(unittest.TestCase):
         assert currency.to_decimal(5011) == Decimal(5011)/Decimal(60*60)
 
         amount = (60**2)*2 + (60**1)*2 + (60**0)*3
+        amount_str = 'Ħ02:02:03'
+        amount_str2 = 'Ħ02.02.03'
         assert currency.get_units(amount) == (2, 2, 3)
-        assert currency.format(amount, use_decimal=False, divider=':') == 'Ħ02:02:03', \
-            currency.format(amount, use_decimal=False, divider=':')
-        assert currency.format(amount, use_decimal=False, divider='.') == 'Ħ02.02.03', \
-            currency.format(amount, use_decimal=False, divider='.')
+        assert currency.format(amount, use_decimal=False, divider=':') == amount_str, \
+            (currency.format(amount, use_decimal=False, divider=':'), amount)
+        assert currency.format(amount, use_decimal=False, divider='.') == amount_str2, \
+            (currency.format(amount, use_decimal=False, divider='.'), amount)
+        assert currency.parse(amount_str, use_decimal=False, divider=':') == amount, \
+            (currency.parse(amount_str, use_decimal=False, divider=':'), amount)
 
         amount = Decimal('1.51')
         assert currency.from_decimal(amount) == 5436, currency.from_decimal(amount)

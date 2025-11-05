@@ -108,3 +108,30 @@ class Currency(HashedModel):
             return f"{self.prefix_symbol}{amount}"
 
         return amount
+
+    def parse(
+            self, amount_str: str, *,
+            use_decimal: bool = True, decimal_places: int = 2,
+            divider: str = '.'
+        ) -> str:
+        """Inverse of `format`: takes a formatted `str` and outputs the
+            correct `int` amount of base units.
+        """
+        if self.prefix_symbol:
+            amount_str = amount_str.replace(self.prefix_symbol, '')
+        if self.postfix_symbol:
+            amount_str = amount_str.replace(self.postfix_symbol, '')
+        if self.fx_symbol:
+            amount_str = amount_str.replace(self.fx_symbol, '')
+        amount_str = amount_str.strip()
+
+        if use_decimal:
+            return self.from_decimal(Decimal(amount_str))
+
+        parts = amount_str.split(divider)
+        amount = 0
+        plen = len(parts)
+        for i in range(plen):
+            amount += int(parts[i]) * self.base ** (plen-i-1)
+        return amount
+
