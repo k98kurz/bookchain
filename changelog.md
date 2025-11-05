@@ -1,3 +1,8 @@
+## next release
+
+- Added `Currency.parse` to parse str output of `Currency.format` into correct
+  int amount of base units
+
 ## 0.4.1
 
 - Bug fix: `Currency.format` was not using the `divider` argument properly;
