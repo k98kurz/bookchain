@@ -1,7 +1,8 @@
-## next release
+## 0.4.2
 
 - Added `Currency.parse` to parse str output of `Currency.format` into correct
   int amount of base units
+- Updated sqloquent dependency to 0.7.1 and improved documentation accordingly
 
 ## 0.4.1
 
