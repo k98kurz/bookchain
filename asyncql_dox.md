@@ -41,10 +41,10 @@ ArchivedTransaction. Must be used in conjunction with ArchivedTransaction.
 
 - type: The EntryType of the ArchivedEntry.
 - details: A packify.SerializableType stored in the database as a blob.
-- transactions: The related ArchivedTransactions. Setting raises TypeError if
-the precondition check fails.
-- account: The related Account. Setting raises TypeError if the precondition
-check fails.
+- transactions: The related `ArchivedTransaction`s. Attempting to set to a
+non-`ArchivedTransaction` raises a `TypeError`.
+- account: The related `Account`. Attempting to set to a non-`Account` raises a
+`TypeError`.
 
 #### Methods
 
@@ -113,10 +113,10 @@ return the result of calling the plugin function.
 
 - type: The EntryType of the Entry.
 - details: A packify.SerializableType stored in the database as a blob.
-- account: The related Account. Setting raises TypeError if the precondition
-check fails.
-- transactions: The related Transactions. Setting raises TypeError if the
-precondition check fails.
+- account: The related `Account`. Attempting to set to a non-`Account` raises a
+`TypeError`.
+- transactions: The related `Transaction`s. Attempting to set to a
+non-`Transaction` raises a `TypeError`.
 
 #### Methods
 
@@ -200,20 +200,20 @@ ArchivedEntry.
 - locking_scripts: The dict mapping EntryType to tapescript locking script
 bytes.
 - details: A packify.SerializableType stored in the database as a blob.
-- correspondence: The related Correspondence. Setting raises TypeError if the
-precondition check fails.
-- ledger: The related Ledger. Setting raises TypeError if the precondition check
-fails.
-- children: The related Accounts. Setting raises TypeError if the precondition
-check fails.
-- parent: The related Account. Setting raises TypeError if the precondition
-check fails.
-- category: The related AccountCategory. Setting raises TypeError if the
-precondition check fails.
-- entries: The related Entrys. Setting raises TypeError if the precondition
-check fails.
-- archived_entries: The related ArchivedEntrys. Setting raises TypeError if the
-precondition check fails.
+- correspondence: The related `Correspondence`. Attempting to set to a
+non-`Correspondence` raises a `TypeError`.
+- ledger: The related `Ledger`. Attempting to set to a non-`Ledger` raises a
+`TypeError`.
+- children: The related `Account`s. Attempting to set to a non-`Account` raises
+a `TypeError`.
+- parent: The related `Account`. Attempting to set to a non-`Account` raises a
+`TypeError`.
+- category: The related `AccountCategory`. Attempting to set to a
+non-`AccountCategory` raises a `TypeError`.
+- entries: The related `Entry`s. Attempting to set to a non-`Entry` raises a
+`TypeError`.
+- archived_entries: The related `ArchivedEntry`s. Attempting to set to a
+non-`ArchivedEntry` raises a `TypeError`.
 
 #### Methods
 
@@ -272,8 +272,8 @@ respectively.
 #### Properties
 
 - ledger_type: The LedgerType that this AccountCategory applies to, if any.
-- accounts: The related Accounts. Setting raises TypeError if the precondition
-check fails.
+- accounts: The related `Account`s. Attempting to set to a non-`Account` raises
+a `TypeError`.
 
 #### Methods
 
@@ -323,18 +323,18 @@ Ensure conditions are encoded before querying.
 #### Properties
 
 - type: The LedgerType of the Ledger.
-- owner: The related Identity. Setting raises TypeError if the precondition
-check fails.
-- currency: The related Currency. Setting raises TypeError if the precondition
-check fails.
-- accounts: The related Accounts. Setting raises TypeError if the precondition
-check fails.
-- transactions: The related Transactions. Setting raises TypeError if the
-precondition check fails.
-- rollups: The related TxRollups. Setting raises TypeError if the precondition
-check fails.
-- archived_transactions: The related ArchivedTransactions. Setting raises
-TypeError if the precondition check fails.
+- owner: The related `Identity`. Attempting to set to a non-`Identity` raises a
+`TypeError`.
+- currency: The related `Currency`. Attempting to set to a non-`Currency` raises
+a `TypeError`.
+- accounts: The related `Account`s. Attempting to set to a non-`Account` raises
+a `TypeError`.
+- transactions: The related `Transaction`s. Attempting to set to a
+non-`Transaction` raises a `TypeError`.
+- rollups: The related `TxRollup`s. Attempting to set to a non-`TxRollup` raises
+a `TypeError`.
+- archived_transactions: The related `ArchivedTransaction`s. Attempting to set
+to a non-`ArchivedTransaction` raises a `TypeError`.
 
 #### Methods
 
@@ -391,10 +391,10 @@ categories: Asset, Liability, Equity.
 #### Properties
 
 - details: A packify.SerializableType stored in the database as a blob.
-- ledgers: The related Ledgers. Setting raises TypeError if the precondition
-check fails.
-- correspondences: The related Correspondences. Setting raises TypeError if the
-precondition check fails.
+- ledgers: The related `Ledger`s. Attempting to set to a non-`Ledger` raises a
+`TypeError`.
+- correspondences: The related `Correspondence`s. Attempting to set to a
+non-`Correspondence` raises a `TypeError`.
 
 #### Methods
 
@@ -450,14 +450,14 @@ and one crediting the Equity account of the payee.
 - signatures: Returns the signatures of the correspondences as a dict mapping
 Identity ID to bytes signature.
 - txru_lock: Returns the txru_lock directly from the details field.
-- ledgers: The related Ledgers. Setting raises TypeError if the precondition
-check fails.
-- accounts: The related Accounts. Setting raises TypeError if the precondition
-check fails.
-- identities: The related Identitys. Setting raises TypeError if the
-precondition check fails.
-- rollups: The related TxRollups. Setting raises TypeError if the precondition
-check fails.
+- ledgers: The related `Ledger`s. Attempting to set to a non-`Ledger` raises a
+`TypeError`.
+- accounts: The related `Account`s. Attempting to set to a non-`Account` raises
+a `TypeError`.
+- identities: The related `Identity`s. Attempting to set to a non-`Identity`
+raises a `TypeError`.
+- rollups: The related `TxRollup`s. Attempting to set to a non-`TxRollup` raises
+a `TypeError`.
 
 #### Methods
 
@@ -517,10 +517,10 @@ Must be used in conjunction with ArchivedEntry.
 
 - details: A packify.SerializableType stored in the database as a blob.
 - auth_scripts: A dict mapping account IDs to tapescript unlocking script bytes.
-- entries: The related ArchivedEntrys. Setting raises TypeError if the
-precondition check fails.
-- ledgers: The related Ledgers. Setting raises TypeError if the precondition
-check fails.
+- entries: The related `ArchivedEntry`s. Attempting to set to a
+non-`ArchivedEntry` raises a `TypeError`.
+- ledgers: The related `Ledger`s. Attempting to set to a non-`Ledger` raises a
+`TypeError`.
 
 #### Methods
 
@@ -566,8 +566,8 @@ Validate the transaction, save the entries, then save the transaction.
 
 - details: A string stored in the database as text. Note that this will be
 changed to a packify.SerializableType stored as a blob in 0.4.0.
-- ledgers: The related Ledgers. Setting raises TypeError if the precondition
-check fails.
+- ledgers: The related `Ledger`s. Attempting to set to a non-`Ledger` raises a
+`TypeError`.
 
 #### Methods
 
@@ -593,6 +593,11 @@ is `False`, instead the unit subdivisions from `get_units` will be combined
 using the `divider` char, and each part will be prefix padded with 0s to reach
 the `decimal_places`. E.g. `.format(200, use_decimal=False, divider=':') ==
 '02:00'` for a Currency with `base=100` and `unit_divisions=1`.
+
+##### `parse(amount_str: str, /, *, divider: str = '.', decimal_places: int = 2, use_decimal: bool = True) -> str:`
+
+Inverse of `format`: takes a formatted `str` and outputs the correct `int`
+amount of base units.
 
 ### `Customer(AsyncHashedModel)`
 
@@ -651,12 +656,12 @@ script to be recorded in the auth_scripts dict of the Transaction.
 
 - details: A packify.SerializableType stored in the database as a blob.
 - auth_scripts: A dict mapping account IDs to tapescript unlocking script bytes.
-- entries: The related Entrys. Setting raises TypeError if the precondition
-check fails.
-- ledgers: The related Ledgers. Setting raises TypeError if the precondition
-check fails.
-- rollups: The related TxRollups. Setting raises TypeError if the precondition
-check fails.
+- entries: The related `Entry`s. Attempting to set to a non-`Entry` raises a
+`TypeError`.
+- ledgers: The related `Ledger`s. Attempting to set to a non-`Ledger` raises a
+`TypeError`.
+- rollups: The related `TxRollup`s. Attempting to set to a non-`TxRollup` raises
+a `TypeError`.
 
 #### Methods
 
@@ -744,16 +749,16 @@ verified by mirrors that have only the tx_root.
 combined into a Merkle Tree, the root of which is used to set `self.tx_root`.
 - balances: A dict mapping account IDs to tuple[EntryType, int] balances.
 - tree: A merkle tree of the transaction IDs.
-- ledger: The related Ledger. Setting raises TypeError if the precondition check
-fails.
-- transactions: The related Transactions. Setting raises TypeError if the
-precondition check fails.
-- parent: The related TxRollup. Setting raises TypeError if the precondition
-check fails.
-- child: The related TxRollup. Setting raises TypeError if the precondition
-check fails.
-- correspondence: The related Correspondence. Setting raises TypeError if the
-precondition check fails.
+- ledger: The related `Ledger`. Attempting to set to a non-`Ledger` raises a
+`TypeError`.
+- transactions: The related `Transaction`s. Attempting to set to a
+non-`Transaction` raises a `TypeError`.
+- parent: The related `TxRollup`. Attempting to set to a non-`TxRollup` raises a
+`TypeError`.
+- child: The related `TxRollup`. Attempting to set to a non-`TxRollup` raises a
+`TypeError`.
+- correspondence: The related `Correspondence`. Attempting to set to a
+non-`Correspondence` raises a `TypeError`.
 
 #### Methods
 
