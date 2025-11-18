@@ -1,3 +1,7 @@
+## 0.4.3
+
+- Updated sqloquent dependency to 0.7.2
+
 ## 0.4.2
 
 - Added `Currency.parse` to parse str output of `Currency.format` into correct

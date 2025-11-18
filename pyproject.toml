@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bookchain"
-version = "0.4.2"
+version = "0.4.3"
 authors = [
   { name="k98kurz", email="k98kurz@gmail.com" },
 ]
@@ -21,7 +21,7 @@ classifiers = [
   "Topic :: Office/Business :: Financial :: Accounting",
 ]
 dependencies = [
-  "sqloquent >= 0.7.1",
+  "sqloquent >= 0.7.2",
   "tapescript >= 0.7.2",
   "merkleasy >= 0.1.2",
   "packify >= 0.3.1"
@@ -34,7 +34,7 @@ dependencies = [
 
 [project.optional-dependencies]
 asyncql = [
-  "sqloquent[asyncql] >= 0.7.1",
+  "sqloquent[asyncql] >= 0.7.2",
 ]
 docs = [
   "autodox >= 0.1.16"
