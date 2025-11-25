@@ -1,3 +1,10 @@
+## 0.4.4
+
+- Bug fix: reading `.details` properties where `.data['details'] == None` no
+  longer raises `TypeError: object of type 'NoneType' has no len()`
+- Bug fix: reading `txn.auth_scripts` property where `.data['auth_scripts'] == None`
+  no longer raises `TypeError: object of type 'NoneType' has no len()`
+
 ## 0.4.3
 
 - Updated sqloquent dependency to 0.7.2
