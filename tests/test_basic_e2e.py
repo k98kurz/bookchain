@@ -61,9 +61,17 @@ class TestBasicE2E(unittest.TestCase):
         self.automigrate()
         assert models.Account.query().count() == 0
 
+        # test empty Identity
+        identity = models.Identity()
+        identity.data['details'] = None
+        identity.details
+
         # test empty Transaction
-        (models.Transaction()).details
-        (models.Transaction()).auth_scripts
+        txn = models.Transaction()
+        txn.data['details'] = None
+        txn.data['auth_scripts'] = None
+        txn.details
+        txn.auth_scripts
         assert not models.Transaction().validate()
 
         # setup account categories
@@ -141,7 +149,9 @@ class TestBasicE2E(unittest.TestCase):
         assert liability_acct.children[0].id == liability_sub_acct.id
 
         # test empty Entry
-        (models.Entry()).details
+        entry = models.Entry()
+        entry.data['details'] = None
+        entry.details
 
         # prepare and save a valid transaction
         txn_nonce = os.urandom(16)

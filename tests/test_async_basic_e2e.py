@@ -62,9 +62,17 @@ class TestAsyncBasicE2E(unittest.TestCase):
         self.automigrate()
         assert run(asyncql.Account.query().count()) == 0
 
+        # test empty Identity
+        identity = asyncql.Identity()
+        identity.data['details'] = None
+        identity.details
+
         # test empty Transaction
-        (asyncql.Transaction()).details
-        (asyncql.Transaction()).auth_scripts
+        txn = asyncql.Transaction()
+        txn.data['details'] = None
+        txn.data['auth_scripts'] = None
+        txn.details
+        txn.auth_scripts
         assert not run(asyncql.Transaction().validate())
 
         # setup account categories
@@ -142,7 +150,9 @@ class TestAsyncBasicE2E(unittest.TestCase):
         assert liability_acct.children[0].id == liability_sub_acct.id
 
         # test empty Entry
-        (asyncql.Entry()).details
+        entry = asyncql.Entry()
+        entry.data['details'] = None
+        entry.details
 
         # prepare and save a valid transaction
         txn_nonce = os.urandom(16)
