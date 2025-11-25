@@ -29,7 +29,7 @@ class Identity(HashedModel):
     @property
     def details(self) -> packify.SerializableType:
         """A packify.SerializableType stored in the database as a blob."""
-        return packify.unpack(self.data.get('details', _empty_dict))
+        return packify.unpack(self.data.get('details', None) or _empty_dict)
     @details.setter
     def details(self, val: packify.SerializableType):
         self.data['details'] = packify.pack(val)

@@ -43,7 +43,7 @@ class Transaction(HashedModel):
     @property
     def details(self) -> dict[str, bytes]:
         """A packify.SerializableType stored in the database as a blob."""
-        return packify.unpack(self.data.get('details', _empty_dict))
+        return packify.unpack(self.data.get('details', None) or _empty_dict)
     @details.setter
     def details(self, val: dict[str, bytes]):
         if type(val) is not dict:
@@ -55,7 +55,7 @@ class Transaction(HashedModel):
     @property
     def auth_scripts(self) -> dict[str, bytes]:
         """A dict mapping account IDs to tapescript unlocking script bytes."""
-        return packify.unpack(self.data.get('auth_scripts', _empty_dict))
+        return packify.unpack(self.data.get('auth_scripts', None) or _empty_dict)
     @auth_scripts.setter
     def auth_scripts(self, val: dict[str, bytes]):
         if type(val) is not dict:

@@ -44,7 +44,7 @@ class Correspondence(AsyncHashedModel):
     @property
     def details(self) -> dict:
         """Returns the details of the correspondence as a dict."""
-        return packify.unpack(self.data.get('details', _empty_dict))
+        return packify.unpack(self.data.get('details', None) or _empty_dict)
     @details.setter
     def details(self, val: dict):
         """Sets the details of the correspondence as a dict. Raises
