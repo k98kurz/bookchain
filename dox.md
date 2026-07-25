@@ -11,7 +11,7 @@
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -94,7 +94,7 @@ EntryType. Returns True if it does and False if it does not (or if it errors).
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -103,11 +103,14 @@ EntryType. Returns True if it does and False if it does not (or if it errors).
 - details: bytes
 - ledger_type: str | None
 - destination: str
+- account_type: str | None
+- code: str | None
 - accounts: RelatedCollection
 
 #### Properties
 
 - ledger_type: The LedgerType that this AccountCategory applies to, if any.
+- account_type: The AccountType for this AccountCategory, if any.
 - accounts: The related `Account`s. Attempting to set to a non-`Account` raises
 a `TypeError`.
 
@@ -145,7 +148,7 @@ ArchivedTransaction. Must be used in conjunction with ArchivedTransaction.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -221,7 +224,7 @@ used in conjunction with ArchivedEntry.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -279,7 +282,7 @@ and one crediting the Equity account of the payee.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -344,7 +347,7 @@ signed int (equal to Nostro - Vostro).
 - columns: tuple[str]
 - id: <class 'str'>
 - name: <class 'str'>
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
 - data_original: MappingProxyType
@@ -381,7 +384,8 @@ Convert the amount from a Decimal representation.
 Get the full units and subunits. The number of subunit figures will be equal to
 `unit_divisions`; e.g. if `base=10` and `unit_divisions=2`, `get_units(200)`
 will return `(2, 0, 0)`; if `base=60` and `unit_divisions=2`, `get_units(200)`
-will return `(0, 3, 20)`.
+will return `(0, 3, 20)`. If `unit_divisions` is `0`, there are no subunits and
+`get_units(amount)` returns `(amount,)`.
 
 ##### `format(amount: int, /, *, divider: str = '.', use_fx_symbol: bool = False, use_postfix: bool = False, use_prefix: bool = True, decimal_places: int = 2, use_decimal: bool = True) -> str:`
 
@@ -389,7 +393,9 @@ Format an amount using the correct number of `decimal_places`. If `use_decimal`
 is `False`, instead the unit subdivisions from `get_units` will be combined
 using the `divider` char, and each part will be prefix padded with 0s to reach
 the `decimal_places`. E.g. `.format(200, use_decimal=False, divider=':') ==
-'02:00'` for a Currency with `base=100` and `unit_divisions=1`.
+'02:00'` for a Currency with `base=100` and `unit_divisions=1`. If
+`unit_divisions` is `0`, there are no subunits, so the decimal portion is
+omitted.
 
 ##### `parse(amount_str: str, /, *, divider: str = '.', decimal_places: int = 2, use_decimal: bool = True) -> str:`
 
@@ -405,7 +411,7 @@ amount of base units.
 - columns: tuple[str]
 - id: <class 'str'>
 - name: <class 'str'>
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
 - data_original: MappingProxyType
@@ -430,7 +436,7 @@ Model for preserving and restoring deleted HashedModel records.
 - columns: tuple
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -442,19 +448,19 @@ Model for preserving and restoring deleted HashedModel records.
 
 #### Methods
 
-##### `__init__(data: dict = {}) -> None:`
+##### `__init__(data: dict | None = None) -> None:`
 
 ##### `@classmethod insert(data: dict, /, *, suppress_events: bool = False) -> SqlModel | None:`
 
 Insert a new record to the datastore. Return instance. Raises TypeError if data
 is not a dict. Automatically sets a timestamp if one is not supplied.
 
-##### `restore(inject: dict = {}, /, *, suppress_events: bool = False) -> SqlModel:`
+##### `restore(inject: dict | None = None, /, *, suppress_events: bool = False) -> SqlModel:`
 
-Restore a deleted record, remove from deleted_records, and return the restored
-model. Raises ValueError if model_class cannot be found. Raises TypeError if
-model_class is not a subclass of SqlModel. Uses packify.unpack to unpack the
-record. Raises TypeError if packed record is not a dict.
+Restore a deleted record, remove from `deleted_records`, and return the restored
+model. Raises `ValueError` if `model_class` cannot be found. Raises `TypeError`
+if `model_class` is not a subclass of `SqlModel`. Uses `packify.unpack` to
+unpack the record. Raises `TypeError` if packed record is not a dict.
 
 ### `Entry(HashedModel)`
 
@@ -465,7 +471,7 @@ record. Raises TypeError if packed record is not a dict.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -546,7 +552,7 @@ Enum of valid Entry types (CREDIT and DEBIT).
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -591,7 +597,7 @@ Get the nosto and vostro accounts for a correspondent.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -673,7 +679,7 @@ script to be recorded in the auth_scripts dict of the Transaction.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -757,7 +763,7 @@ verified by mirrors that have only the tx_root.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -871,7 +877,7 @@ Returns a query builder for ArchivedEntries committed to in this tx rollup.
 - columns: tuple[str]
 - id: <class 'str'>
 - name: <class 'str'>
-- query_builder_class: Type[QueryBuilderProtocol]
+- query_builder_class: type[QueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
 - data_original: MappingProxyType
@@ -919,4 +925,5 @@ integer string (e.g., "1234567890") - Unix epoch as float string (e.g.,
 "1234567890.123") - ISO 8601 format strings (e.g., "2023-01-01T00:00:00Z") -
 Other datetime formats parseable by datetime.fromisoformat() or
 datetime.strptime()
+
 

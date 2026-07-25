@@ -2,14 +2,6 @@
 
 ## Classes
 
-### `AccountType(Enum)`
-
-Enum of valid Account types.
-
-### `EntryType(Enum)`
-
-Enum of valid Entry types (CREDIT and DEBIT).
-
 ### `ArchivedEntry(AsyncHashedModel)`
 
 Optional class for storing the trimmed Entries connected to an
@@ -22,7 +14,7 @@ ArchivedTransaction. Must be used in conjunction with ArchivedTransaction.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -93,7 +85,7 @@ return the result of calling the plugin function.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -170,7 +162,7 @@ ArchivedEntry.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -244,11 +236,6 @@ from the most recent TxRollup.
 Checks if the auth_script validates against the correct locking_script for the
 EntryType. Returns True if it does and False if it does not (or if it errors).
 
-### `LedgerType(Enum)`
-
-Enum of valid ledger types: CURRENT and FUTURE for cash and accrual accounting,
-respectively.
-
 ### `AccountCategory(AsyncHashedModel)`
 
 #### Annotations
@@ -258,7 +245,7 @@ respectively.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -267,11 +254,14 @@ respectively.
 - details: bytes
 - ledger_type: str | None
 - destination: str
+- account_type: str | None
+- code: str | None
 - accounts: AsyncRelatedCollection
 
 #### Properties
 
 - ledger_type: The LedgerType that this AccountCategory applies to, if any.
+- account_type: The AccountType for this AccountCategory, if any.
 - accounts: The related `Account`s. Attempting to set to a non-`Account` raises
 a `TypeError`.
 
@@ -302,7 +292,7 @@ Ensure conditions are encoded before querying.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -374,7 +364,7 @@ categories: Asset, Liability, Equity.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -428,7 +418,7 @@ and one crediting the Equity account of the payee.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -498,7 +488,7 @@ Must be used in conjunction with ArchivedEntry.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -547,7 +537,7 @@ Validate the transaction, save the entries, then save the transaction.
 - columns: tuple[str]
 - id: <class 'str'>
 - name: <class 'str'>
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
 - data_original: MappingProxyType
@@ -584,7 +574,8 @@ Convert the amount from a Decimal representation.
 Get the full units and subunits. The number of subunit figures will be equal to
 `unit_divisions`; e.g. if `base=10` and `unit_divisions=2`, `get_units(200)`
 will return `(2, 0, 0)`; if `base=60` and `unit_divisions=2`, `get_units(200)`
-will return `(0, 3, 20)`.
+will return `(0, 3, 20)`. If `unit_divisions` is `0`, there are no subunits and
+`get_units(amount)` returns `(amount,)`.
 
 ##### `format(amount: int, /, *, divider: str = '.', use_fx_symbol: bool = False, use_postfix: bool = False, use_prefix: bool = True, decimal_places: int = 2, use_decimal: bool = True) -> str:`
 
@@ -592,7 +583,9 @@ Format an amount using the correct number of `decimal_places`. If `use_decimal`
 is `False`, instead the unit subdivisions from `get_units` will be combined
 using the `divider` char, and each part will be prefix padded with 0s to reach
 the `decimal_places`. E.g. `.format(200, use_decimal=False, divider=':') ==
-'02:00'` for a Currency with `base=100` and `unit_divisions=1`.
+'02:00'` for a Currency with `base=100` and `unit_divisions=1`. If
+`unit_divisions` is `0`, there are no subunits, so the decimal portion is
+omitted.
 
 ##### `parse(amount_str: str, /, *, divider: str = '.', decimal_places: int = 2, use_decimal: bool = True) -> str:`
 
@@ -608,7 +601,7 @@ amount of base units.
 - columns: tuple[str]
 - id: <class 'str'>
 - name: <class 'str'>
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
 - data_original: MappingProxyType
@@ -636,7 +629,7 @@ script to be recorded in the auth_scripts dict of the Transaction.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -720,7 +713,7 @@ verified by mirrors that have only the tx_root.
 - columns: tuple[str]
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -834,7 +827,7 @@ Returns a query builder for ArchivedEntries committed to in this tx rollup.
 - columns: tuple[str]
 - id: <class 'str'>
 - name: <class 'str'>
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: <class 'str'>
 - data: dict
 - data_original: MappingProxyType
@@ -848,6 +841,19 @@ Returns a query builder for ArchivedEntries committed to in this tx rollup.
 
 - details: A packify.SerializableType stored in the database as a blob.
 
+### `AccountType(Enum)`
+
+Enum of valid Account types.
+
+### `EntryType(Enum)`
+
+Enum of valid Entry types (CREDIT and DEBIT).
+
+### `LedgerType(Enum)`
+
+Enum of valid ledger types: CURRENT and FUTURE for cash and accrual accounting,
+respectively.
+
 ### `AsyncDeletedModel(AsyncSqlModel)`
 
 Model for preserving and restoring deleted AsyncHashedModel records.
@@ -859,7 +865,7 @@ Model for preserving and restoring deleted AsyncHashedModel records.
 - columns: tuple
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -871,19 +877,19 @@ Model for preserving and restoring deleted AsyncHashedModel records.
 
 #### Methods
 
-##### `__init__(data: dict = {}) -> None:`
+##### `__init__(data: dict | None = None) -> None:`
 
 ##### `@classmethod async insert(data: dict, /, *, parallel_events: bool = False, suppress_events: bool = False) -> AsyncSqlModel | None:`
 
 Insert a new record to the datastore. Return instance. Raises TypeError if data
 is not a dict. Automatically sets a timestamp if one is not supplied.
 
-##### `async restore(inject: dict = {}, /, *, parallel_events: bool = False, suppress_events: bool = False) -> AsyncSqlModel:`
+##### `async restore(inject: dict | None = None, /, *, parallel_events: bool = False, suppress_events: bool = False) -> AsyncSqlModel:`
 
-Restore a deleted record, remove from deleted_records, and return the restored
+Restore a deleted record, remove from deleted_records, and return restored
 model. Raises ValueError if model_class cannot be found. Raises TypeError if
 model_class is not a subclass of AsyncSqlModel. Uses packify.unpack to unpack
-the record. Raises TypeError if packed record is not a dict.
+record. Raises TypeError if packed record is not a dict.
 
 ### `AsyncAttachment(AsyncHashedModel)`
 
@@ -896,7 +902,7 @@ Class for attaching immutable details to a record.
 - columns: tuple
 - id: str
 - name: str
-- query_builder_class: Type[AsyncQueryBuilderProtocol]
+- query_builder_class: type[AsyncQueryBuilderProtocol]
 - connection_info: str
 - data: dict
 - data_original: MappingProxyType
@@ -922,7 +928,7 @@ Attach to related model then return self.
 
 Decode packed bytes to dict.
 
-##### `set_details(details: packify.SerializableType = {}) -> AsyncAttachment:`
+##### `set_details(details: packify.SerializableType | None = None) -> AsyncAttachment:`
 
 Set the details column using either supplied data or by packifying
 self._details. Return self in monad pattern. Raises packify.UsageError or
@@ -934,4 +940,5 @@ TypeError if details contains unseriazliable type.
 
 Set the connection info for all models to use the specified sqlite3 database
 file path.
+
 
