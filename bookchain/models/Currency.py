@@ -49,7 +49,9 @@ class Currency(HashedModel):
             figures will be equal to `unit_divisions`; e.g. if `base=10`
             and `unit_divisions=2`, `get_units(200)` will return
             `(2, 0, 0)`; if `base=60` and `unit_divisions=2`,
-            `get_units(200)` will return `(0, 3, 20)`.
+            `get_units(200)` will return `(0, 3, 20)`. If
+            `unit_divisions` is `0`, there are no subunits and
+            `get_units(amount)` returns `(amount,)`.
         """
         def get_subunits(amount, base, unit_divisions):
             units_and_change = divmod(amount, base ** unit_divisions)
@@ -61,6 +63,8 @@ class Currency(HashedModel):
             return units_and_change
         base = self.base or 10
         unit_divisions = self.unit_divisions
+        if unit_divisions == 0:
+            return (amount,)
         return get_subunits(amount, base, unit_divisions)
 
     def format(
@@ -75,19 +79,21 @@ class Currency(HashedModel):
             char, and each part will be prefix padded with 0s to reach
             the `decimal_places`. E.g. `.format(200, use_decimal=False,
             divider=':') == '02:00'` for a Currency with `base=100` and
-            `unit_divisions=1`.
+            `unit_divisions=1`. If `unit_divisions` is `0`, there are no
+            subunits, so the decimal portion is omitted.
         """
         if use_decimal:
             amount: str = str(self.to_decimal(amount))
-            if '.' not in amount:
-                amount += '.'
-            digits = amount.split('.')[1]
+            if self.unit_divisions > 0:
+                if '.' not in amount:
+                    amount += '.'
+                digits = amount.split('.')[1]
 
-            while len(digits) < decimal_places:
-                digits += '0'
+                while len(digits) < decimal_places:
+                    digits += '0'
 
-            digits = digits[:decimal_places]
-            amount = f"{amount.split('.')[0]}.{digits}"
+                digits = digits[:decimal_places]
+                amount = f"{amount.split('.')[0]}.{digits}"
         else:
             units = self.get_units(amount)
             amount = ''

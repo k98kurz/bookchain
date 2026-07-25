@@ -1,3 +1,12 @@
+## 0.4.5
+
+- Added optional `account_type` and `code` fields to `AccountCategory`
+- Updated `Currency.get_units` and `Currency.format` for `unit_divisions=0`
+- Added new regression test file for specific bug fixes
+- Fixed `Account.query()` and `AccountCategory.query()` mutating `conditions` dict
+- Consolidated enum types into shared `bookchain.enums` module to fix encoding
+  errors when using sync model enums with async queries (and vice versa)
+
 ## 0.4.4
 
 - Bug fix: reading `.details` properties where `.data['details'] == None` no

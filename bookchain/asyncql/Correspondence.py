@@ -1,8 +1,9 @@
 from __future__ import annotations
-from .Account import Account, AccountType
-from .Entry import Entry, EntryType
+from .Account import Account
+from .Entry import Entry
 from .Identity import Identity
 from .Ledger import Ledger
+from bookchain.enums import AccountType, EntryType
 from sqloquent.asyncql import AsyncHashedModel, AsyncRelatedCollection
 from sqloquent.errors import vert, tert
 import packify

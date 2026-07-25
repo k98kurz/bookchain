@@ -1,6 +1,7 @@
 from __future__ import annotations
-from .Account import Account, AccountType
+from .Account import Account
 from .Ledger import Ledger
+from bookchain.enums import AccountType
 from sqloquent.asyncql import AsyncHashedModel, AsyncRelatedCollection
 import packify
 

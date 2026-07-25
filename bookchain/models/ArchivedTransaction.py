@@ -1,10 +1,10 @@
 from __future__ import annotations
-from sqloquent import HashedModel, RelatedCollection
-from sqloquent.errors import vert, tert
 from .Account import Account, AccountType
 from .Correspondence import Correspondence
 from .ArchivedEntry import ArchivedEntry, EntryType
 from .Identity import Identity
+from sqloquent import HashedModel, RelatedCollection
+from sqloquent.errors import vert, tert
 import packify
 
 

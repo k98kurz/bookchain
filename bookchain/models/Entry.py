@@ -1,7 +1,7 @@
 from __future__ import annotations
-from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
 from .ArchivedEntry import ArchivedEntry
-from .EntryType import EntryType
+from bookchain.enums import EntryType
+from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
 from typing import Callable
 import packify
 

@@ -97,6 +97,20 @@ class TestMisc(unittest.TestCase):
         amount = Decimal('1.51')
         assert currency.from_decimal(amount) == 5436, currency.from_decimal(amount)
 
+        # unit_divisions=0: no subdivisions (e.g. JPY-style whole units)
+        currency = models.Currency({
+            'name': 'JPY-style',
+            'prefix_symbol': 'Y',
+            'fx_symbol': 'JPY',
+            'base': 100,
+            'unit_divisions': 0,
+        })
+        assert currency.get_units(100) == (100,), currency.get_units(100)
+        assert currency.format(100) == 'Y100', currency.format(100)
+        assert currency.format(100, use_decimal=False) == 'Y100', \
+            currency.format(100, use_decimal=False)
+        assert currency.parse('Y100') == 100, currency.parse('Y100')
+
     def test_asyncql_currency(self):
         currency = asyncql.Currency({
             'name': 'US Dollar',
@@ -139,6 +153,20 @@ class TestMisc(unittest.TestCase):
 
         amount = Decimal('1.51')
         assert currency.from_decimal(amount) == 5436, currency.from_decimal(amount)
+
+        # unit_divisions=0: no subdivisions (e.g. JPY-style whole units)
+        currency = asyncql.Currency({
+            'name': 'JPY-style',
+            'prefix_symbol': 'Y',
+            'fx_symbol': 'JPY',
+            'base': 100,
+            'unit_divisions': 0,
+        })
+        assert currency.get_units(100) == (100,), currency.get_units(100)
+        assert currency.format(100) == 'Y100', currency.format(100)
+        assert currency.format(100, use_decimal=False) == 'Y100', \
+            currency.format(100, use_decimal=False)
+        assert currency.parse('Y100') == 100, currency.parse('Y100')
 
     def test_publish_migrations(self):
         assert len(os.listdir(MIGRATIONS_PATH)) < 2, os.listdir(MIGRATIONS_PATH)

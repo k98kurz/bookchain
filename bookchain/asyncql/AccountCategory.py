@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .LedgerType import LedgerType
+from bookchain.enums import LedgerType, AccountType
 from typing import Any
 from sqloquent.asyncql import AsyncHashedModel, AsyncRelatedCollection, AsyncQueryBuilderProtocol
 
@@ -8,22 +8,40 @@ class AccountCategory(AsyncHashedModel):
     connection_info: str = ''
     table: str = 'account_categories'
     id_column: str = 'id'
-    columns: tuple[str] = ('id', 'name', 'ledger_type', 'destination')
+    columns: tuple[str] = (
+        'id', 'name', 'ledger_type', 'destination', 'account_type', 'code',
+    )
     id: str
     name: str
     ledger_type: str|None
     destination: str
+    account_type: str|None
+    code: str|None
     accounts: AsyncRelatedCollection
 
     @property
     def ledger_type(self) -> LedgerType|None:
         """The LedgerType that this AccountCategory applies to, if any."""
-        return LedgerType(self.data['ledger_type']) if self.data['ledger_type'] else None
+        if self.data.get('ledger_type'):
+            return LedgerType(self.data['ledger_type'])
+        return None
     @ledger_type.setter
     def ledger_type(self, value: LedgerType) -> None:
         if not isinstance(value, LedgerType):
             raise ValueError(f'Expected LedgerType, got {type(value)}')
         self.data['ledger_type'] = value.value
+
+    @property
+    def account_type(self) -> AccountType|None:
+        """The AccountType for this AccountCategory, if any."""
+        if self.data.get('account_type'):
+            return AccountType(self.data['account_type'])
+        return None
+    @account_type.setter
+    def account_type(self, value: AccountType) -> None:
+        if not isinstance(value, AccountType):
+            raise ValueError(f'Expected AccountType, got {type(value)}')
+        self.data['account_type'] = value.value
 
     @classmethod
     def _encode(cls, data: dict) -> dict:
@@ -33,6 +51,8 @@ class AccountCategory(AsyncHashedModel):
         data = {**data}
         if type(data.get('ledger_type', None)) is LedgerType:
             data['ledger_type'] = data['ledger_type'].value
+        if type(data.get('account_type', None)) is AccountType:
+            data['account_type'] = data['account_type'].value
         return data
 
     @classmethod
@@ -54,6 +74,9 @@ class AccountCategory(AsyncHashedModel):
     @classmethod
     def query(cls, conditions: dict = None, connection_info: str = None) -> AsyncQueryBuilderProtocol:
         """Ensure conditions are encoded before querying."""
+        conditions = {**conditions} if conditions else {}
         if conditions and 'ledger_type' in conditions and isinstance(conditions['ledger_type'], LedgerType):
             conditions['ledger_type'] = conditions['ledger_type'].value
+        if conditions and 'account_type' in conditions and isinstance(conditions['account_type'], AccountType):
+            conditions['account_type'] = conditions['account_type'].value
         return super().query(conditions, connection_info)

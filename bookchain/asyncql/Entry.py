@@ -1,9 +1,10 @@
 from __future__ import annotations
-from sqloquent.asyncql import (
-    AsyncHashedModel, AsyncRelatedModel, AsyncRelatedCollection, AsyncQueryBuilderProtocol
-)
 from .ArchivedEntry import ArchivedEntry
-from .EntryType import EntryType
+from bookchain.enums import EntryType
+from sqloquent.asyncql import (
+    AsyncHashedModel, AsyncRelatedModel, AsyncRelatedCollection,
+    AsyncQueryBuilderProtocol
+)
 from typing import Callable
 import packify
 

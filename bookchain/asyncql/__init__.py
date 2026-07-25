@@ -1,16 +1,17 @@
-from .Account import Account, AccountType
+from .Account import Account
 from .AccountCategory import AccountCategory
 from .ArchivedEntry import ArchivedEntry
 from .ArchivedTransaction import ArchivedTransaction
 from .Correspondence import Correspondence
 from .Currency import Currency
 from .Customer import Customer
-from .Entry import Entry, EntryType
+from .Entry import Entry
 from .Identity import Identity
-from .Ledger import Ledger, LedgerType
+from .Ledger import Ledger
 from .Transaction import Transaction
 from .TxRollup import TxRollup
 from .Vendor import Vendor
+from bookchain.enums import AccountType, EntryType, LedgerType
 from sqloquent.asyncql import (
     AsyncDeletedModel, AsyncAttachment,
     async_contains, async_within, async_has_many, async_belongs_to,

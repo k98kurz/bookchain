@@ -1,10 +1,9 @@
 from __future__ import annotations
+from .Entry import Entry
+from bookchain.enums import AccountType, EntryType
 from sqloquent import HashedModel, RelatedModel, RelatedCollection, Default
 from sqloquent.interfaces import QueryBuilderProtocol
 from tapescript import run_auth_scripts, Script
-from .AccountType import AccountType
-from .Entry import Entry
-from .EntryType import EntryType
 import packify
 
 
@@ -111,6 +110,7 @@ class Account(HashedModel):
     @classmethod
     def query(cls, conditions: dict = None, connection_info: str = None) -> QueryBuilderProtocol:
         """Ensure conditions are encoded before querying."""
+        conditions = {**conditions} if conditions else {}
         if conditions and type(conditions.get('type', None)) is AccountType:
             conditions['type'] = conditions['type'].value
         return super().query(conditions, connection_info)

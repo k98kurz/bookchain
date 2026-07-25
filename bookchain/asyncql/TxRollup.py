@@ -1,8 +1,9 @@
 from __future__ import annotations
 from .Correspondence import Correspondence
-from .Entry import Entry, EntryType, ArchivedEntry
+from .Entry import Entry, ArchivedEntry
 from .Ledger import Ledger
 from .Transaction import Transaction, ArchivedTransaction
+from bookchain.enums import EntryType
 from merkleasy import Tree
 from sqloquent.asyncql import (
     AsyncDeletedModel,

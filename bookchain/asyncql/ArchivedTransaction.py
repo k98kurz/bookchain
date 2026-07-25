@@ -1,10 +1,11 @@
 from __future__ import annotations
-from sqloquent.asyncql import AsyncHashedModel, AsyncRelatedCollection
-from sqloquent.errors import vert, tert
-from .Account import Account, AccountType
-from .ArchivedEntry import ArchivedEntry, EntryType
+from .Account import Account
+from .ArchivedEntry import ArchivedEntry
 from .Correspondence import Correspondence
 from .Identity import Identity
+from bookchain.enums import AccountType, EntryType
+from sqloquent.asyncql import AsyncHashedModel, AsyncRelatedCollection
+from sqloquent.errors import vert, tert
 import packify
 
 

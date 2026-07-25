@@ -1,6 +1,6 @@
 from __future__ import annotations
-from .Account import Account, AccountType
-from .LedgerType import LedgerType
+from .Account import Account
+from bookchain.enums import AccountType, LedgerType
 from sqloquent import (
     HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol,
 )

@@ -1,6 +1,6 @@
 from __future__ import annotations
+from bookchain.enums import EntryType
 from sqloquent import HashedModel, RelatedModel, RelatedCollection, QueryBuilderProtocol
-from .EntryType import EntryType
 from typing import Callable
 import packify
 

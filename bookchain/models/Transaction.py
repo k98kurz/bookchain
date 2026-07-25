@@ -1,12 +1,13 @@
 from __future__ import annotations
-from sqloquent import HashedModel, RelatedCollection
-from sqloquent.errors import vert, tert
-from .Account import Account, AccountType
+from .Account import Account
 from .ArchivedTransaction import ArchivedTransaction
 from .Correspondence import Correspondence
 from .Entry import Entry, EntryType
 from .Identity import Identity
 from ..helpers import parse_timestamp
+from bookchain.enums import AccountType
+from sqloquent import HashedModel, RelatedCollection
+from sqloquent.errors import vert, tert
 import packify
 
 
