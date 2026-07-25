@@ -6,6 +6,7 @@
 - Fixed `Account.query()` and `AccountCategory.query()` mutating `conditions` dict
 - Consolidated enum types into shared `bookchain.enums` module to fix encoding
   errors when using sync model enums with async queries (and vice versa)
+- Updated sqloquent to 0.7.4; packify to 0.3.3; tapescript to 0.7.3
 
 ## 0.4.4
 
